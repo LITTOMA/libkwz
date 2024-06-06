@@ -7,6 +7,8 @@ namespace LibKwz;
 
 public class KwzHeader
 {
+    public readonly DateTime Epoch = new(2000, 1, 1);
+
     // Private fields for internal use
     private char[] _magic = [.."KFH\x14"];
     private uint _size = 0xCC;
@@ -36,8 +38,8 @@ public class KwzHeader
     public uint CreationTimestamp { get => _creationTimestamp; set => _creationTimestamp = value; }
     public uint LastEditTimestamp { get => _lastEditTimestamp; set => _lastEditTimestamp = value; }
     // Timestamps are stored as the number of seconds since midnight 1 Jan 2000.
-    public DateTime CreationDateTime { get => new DateTime(2000, 1, 1).AddSeconds(_creationTimestamp); set => _creationTimestamp = (uint)(value - new DateTime(2000, 1, 1)).TotalSeconds; }
-    public DateTime LastEditDateTime { get => new DateTime(2000, 1, 1).AddSeconds(_lastEditTimestamp); set => _lastEditTimestamp = (uint)(value - new DateTime(2000, 1, 1)).TotalSeconds; }
+    public DateTime CreationDateTime { get => Epoch.AddSeconds(_creationTimestamp); set => _creationTimestamp = (uint)(value - Epoch).TotalSeconds; }
+    public DateTime LastEditDateTime { get => Epoch.AddSeconds(_lastEditTimestamp); set => _lastEditTimestamp = (uint)(value - Epoch).TotalSeconds; }
     public uint AppVersion { get => _appVersion; set => _appVersion = value; }
     public byte[] RootAuthorId { get => _rootAuthorId; set => _rootAuthorId = value; }
     public byte[] ParentAuthorId { get => _parentAuthorId; set => _parentAuthorId = value; }
