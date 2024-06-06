@@ -60,7 +60,7 @@ public static class Utils
 
         static Base32Codec()
         {
-            CharMap = new Dictionary<char, byte>();
+            CharMap = [];
             for (byte i = 0; i < CustomAlphabet.Length; i++)
             {
                 CharMap[CustomAlphabet[i]] = i;
@@ -81,7 +81,6 @@ public static class Utils
 
             byte currentByte = 0;
             int bitsRemaining = 8;
-            int mask = 0;
             int arrayIndex = 0;
 
             foreach (char c in input)
@@ -89,6 +88,7 @@ public static class Utils
                 if (!CharMap.TryGetValue(c, out byte value))
                     throw new ArgumentException($"Character '{c}' is not valid in Base32 encoding.");
 
+                int mask;
                 if (bitsRemaining > 5)
                 {
                     mask = value << (bitsRemaining - 5);
