@@ -67,6 +67,59 @@ public class KwzHeader
     public bool LayerCVisible { get => (_layerVisibilityFlags & 0x4) == 0; set => _layerVisibilityFlags = value ? (byte)(_layerVisibilityFlags & ~0x4) : (byte)(_layerVisibilityFlags | 0x4); }
 
 
+    public const float FramesPerSecondLevel0 = 0.2f;
+    public const float FramesPerSecondLevel1 = 0.5f;
+    public const float FramesPerSecondLevel2 = 1f;
+    public const float FramesPerSecondLevel3 = 2f;
+    public const float FramesPerSecondLevel4 = 4f;
+    public const float FramesPerSecondLevel5 = 6f;
+    public const float FramesPerSecondLevel6 = 8f;
+    public const float FramesPerSecondLevel7 = 12f;
+    public const float FramesPerSecondLevel8 = 20f;
+    public const float FramesPerSecondLevel9 = 24f;
+    public const float FramesPerSecondLevel10 = 30f;
+
+    public float FramesPerSecond
+    {
+        get
+        {
+            return _frameSpeed switch
+            {
+                0 => FramesPerSecondLevel0,
+                1 => FramesPerSecondLevel1,
+                2 => FramesPerSecondLevel2,
+                3 => FramesPerSecondLevel3,
+                4 => FramesPerSecondLevel4,
+                5 => FramesPerSecondLevel5,
+                6 => FramesPerSecondLevel6,
+                7 => FramesPerSecondLevel7,
+                8 => FramesPerSecondLevel8,
+                9 => FramesPerSecondLevel9,
+                10 => FramesPerSecondLevel10,
+                _ => throw new ArgumentOutOfRangeException(nameof(_frameSpeed), "Invalid frame speed value")
+            };
+        }
+        set
+        {
+            _frameSpeed = value switch
+            {
+                FramesPerSecondLevel0 => 0,
+                FramesPerSecondLevel1 => 1,
+                FramesPerSecondLevel2 => 2,
+                FramesPerSecondLevel3 => 3,
+                FramesPerSecondLevel4 => 4,
+                FramesPerSecondLevel5 => 5,
+                FramesPerSecondLevel6 => 6,
+                FramesPerSecondLevel7 => 7,
+                FramesPerSecondLevel8 => 8,
+                FramesPerSecondLevel9 => 9,
+                FramesPerSecondLevel10 => 10,
+                _ => throw new ArgumentOutOfRangeException(nameof(value), "Invalid frame speed value")
+            };
+        }
+    }
+
+
     public static KwzHeader ReadFrom(BinaryReader reader)
     {
         var header = new KwzHeader();

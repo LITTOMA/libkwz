@@ -246,4 +246,45 @@ public class KwzHeaderTest
 
         Assert.NotEqual(layerVisibilityFlags, header.LayerVisibilityFlags);
     }
+
+    [Fact]
+    public void TestSettingFps()
+    {
+        var header = KwzHeader.ReadFrom(new BinaryReader(new MemoryStream(sampleHeader)));
+        Assert.Equal(8, header.FrameSpeed);
+        Assert.Equal(KwzHeader.FramesPerSecondLevel8, header.FramesPerSecond);
+
+        header.FramesPerSecond = KwzHeader.FramesPerSecondLevel10;
+        Assert.Equal(10, header.FrameSpeed);
+
+        header.FramesPerSecond = KwzHeader.FramesPerSecondLevel9;
+        Assert.Equal(9, header.FrameSpeed);
+
+        header.FramesPerSecond = KwzHeader.FramesPerSecondLevel8;
+        Assert.Equal(8, header.FrameSpeed);
+
+        header.FramesPerSecond = KwzHeader.FramesPerSecondLevel7;
+        Assert.Equal(7, header.FrameSpeed);
+
+        header.FramesPerSecond = KwzHeader.FramesPerSecondLevel6;
+        Assert.Equal(6, header.FrameSpeed);
+
+        header.FramesPerSecond = KwzHeader.FramesPerSecondLevel5;
+        Assert.Equal(5, header.FrameSpeed);
+
+        header.FramesPerSecond = KwzHeader.FramesPerSecondLevel4;
+        Assert.Equal(4, header.FrameSpeed);
+
+        header.FramesPerSecond = KwzHeader.FramesPerSecondLevel3;
+        Assert.Equal(3, header.FrameSpeed);
+
+        header.FramesPerSecond = KwzHeader.FramesPerSecondLevel2;
+        Assert.Equal(2, header.FrameSpeed);
+
+        header.FramesPerSecond = KwzHeader.FramesPerSecondLevel1;
+        Assert.Equal(1, header.FrameSpeed);
+
+        header.FramesPerSecond = KwzHeader.FramesPerSecondLevel0;
+        Assert.Equal(0, header.FrameSpeed);
+    }
 }
