@@ -57,6 +57,16 @@ public class KwzHeader
     public byte LayerVisibilityFlags { get => _layerVisibilityFlags; set => _layerVisibilityFlags = value; }
 
 
+    public bool Locked { get => (_flags & 0x1) != 0; set => _flags = value ? (ushort)(_flags | 0x1) : (ushort)(_flags & ~0x1); }
+    public bool LoopPlayback { get => (_flags & 0x2) != 0; set => _flags = value ? (ushort)(_flags | 0x2) : (ushort)(_flags & ~0x2); }
+    public bool Toolset { get => (_flags & 0x4) != 0; set => _flags = value ? (ushort)(_flags | 0x4) : (ushort)(_flags & ~0x4); }
+
+
+    public bool LayerAVisible { get => (_layerVisibilityFlags & 0x1) == 0; set => _layerVisibilityFlags = value ? (byte)(_layerVisibilityFlags & ~0x1) : (byte)(_layerVisibilityFlags | 0x1); }
+    public bool LayerBVisible { get => (_layerVisibilityFlags & 0x2) == 0; set => _layerVisibilityFlags = value ? (byte)(_layerVisibilityFlags & ~0x2) : (byte)(_layerVisibilityFlags | 0x2); }
+    public bool LayerCVisible { get => (_layerVisibilityFlags & 0x4) == 0; set => _layerVisibilityFlags = value ? (byte)(_layerVisibilityFlags & ~0x4) : (byte)(_layerVisibilityFlags | 0x4); }
+
+
     public static KwzHeader ReadFrom(BinaryReader reader)
     {
         var header = new KwzHeader();
