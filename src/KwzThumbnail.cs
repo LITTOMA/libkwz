@@ -7,7 +7,7 @@ public class KwzThumbnail
     private char[] _magic = new char[4];
     private uint _size;
     private uint _crc32;
-    private byte[] _data;
+    private byte[]? _data;
 
     public char[] Magic => _magic;
     public uint Size => _size;
@@ -28,6 +28,8 @@ public class KwzThumbnail
 
     public void WriteTo(BinaryWriter writer)
     {
+        ArgumentNullException.ThrowIfNull(_data);
+        
         _size = (uint)_data.Length;
         _crc32 = System.IO.Hashing.Crc32.HashToUInt32(_data);
 
