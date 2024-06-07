@@ -4,6 +4,17 @@ namespace LibKwz;
 
 public class KwzMeta
 {
+    public static readonly Color[] FramePalette = new Color[]
+    {
+            Color.FromRgba(0xFF, 0xFF, 0xFF, 0xFF),
+            Color.FromRgba(0x14, 0x14, 0x14, 0xFF),
+            Color.FromRgba(0xFF, 0x17, 0x17, 0xFF),
+            Color.FromRgba(0xFF, 0xE6, 0x00, 0xFF),
+            Color.FromRgba(0x00, 0x82, 0x32, 0xFF),
+            Color.FromRgba(0x06, 0xAE, 0xFF, 0xFF),
+            Color.FromRgba(0x00, 0x00, 0x00, 0x00),
+    };
+
     private char[] _magic = new char[4];
     private uint _size;
     private byte[]? _data;
@@ -57,16 +68,6 @@ public class KwzMeta
 
     public class FrameMeta
     {
-        private static readonly Color[] FramePalette = new Color[]
-        {
-            Color.FromRgba(0xFF, 0xFF, 0xFF, 0xFF),
-            Color.FromRgba(0x14, 0x14, 0x14, 0xFF),
-            Color.FromRgba(0xFF, 0x17, 0x17, 0xFF),
-            Color.FromRgba(0xFF, 0xE6, 0x00, 0xFF),
-            Color.FromRgba(0x00, 0x82, 0x32, 0xFF),
-            Color.FromRgba(0x06, 0xAE, 0xFF, 0xFF),
-            Color.FromRgba(0x00, 0x00, 0x00, 0x00),
-        };
 
         private uint _flags;
         private ushort _layerASize;
@@ -89,6 +90,7 @@ public class KwzMeta
         public byte LayerADepth { get => _layerADepth; set => _layerADepth = value; }
         public byte LayerBDepth { get => _layerBDepth; set => _layerBDepth = value; }
         public byte LayerCDepth { get => _layerCDepth; set => _layerCDepth = value; }
+        public byte[] LayerDepths => [_layerADepth, _layerBDepth, _layerCDepth];
         public byte SoundEffectFlags { get => _soundEffectFlags; set => _soundEffectFlags = value; }
         public ushort Unknown { get => _unknown; set => _unknown = value; }
         public ushort CameraFlags { get => _cameraFlags; set => _cameraFlags = value; }
