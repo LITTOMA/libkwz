@@ -49,6 +49,15 @@ public static class BinaryExtensions
         return reader;
     }
 
+    public static BinaryReader PeekChars(this BinaryReader reader, int count, out char[] value, Encoding? encoding = default)
+    {
+        value = new char[count];
+        var position = reader.BaseStream.Position;
+        reader.ReadChars(count, ref value, encoding);
+        reader.BaseStream.Position = position;
+        return reader;
+    }
+
     public static BinaryWriter WriteValue(this BinaryWriter writer, uint value)
     {
         writer.Write(value);

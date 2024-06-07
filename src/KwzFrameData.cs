@@ -3,11 +3,14 @@ using System.Buffers.Binary;
 using System.IO;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 
 namespace LibKwz;
 
 public class KwzFrameData
 {
+    public const string MAGIC = "KMC\x02";
+
     private static readonly ushort[] commonLineIndexTable =
     [
         0x0000, 0x0CD0, 0x19A0, 0x02D9, 0x088B, 0x0051, 0x00F3, 0x0009,
@@ -72,14 +75,14 @@ public class KwzFrameData
     private int[] _frameOffsets;
     private bool[] _layerVisibility;
     private KwzMeta _frameMeta;
-    private int _prevDecodedFrame;
+    private int _prevDecodedFrame = -1;
 
     public char[] Magic => _magic;
     public uint Size => _size;
     public uint Crc32 { get => _crc32; set => _crc32 = value; }
     public byte[] Data { get => _data; set => _data = value; }
-    public List<(Image LayerA, Image LayerB, Image LayerC)> DecodedFrames { get; private set; }
-        = new List<(Image, Image, Image)>();
+    public List<(Image LayerA, Image LayerB, Image LayerC)> DecodedFrames { get; private set; } = [];
+    public List<Image> CompositeFrames { get; private set; } = [];
 
     public static KwzFrameData ReadFrom(BinaryReader reader, KwzHeader header, KwzMeta meta)
     {
@@ -105,14 +108,15 @@ public class KwzFrameData
 
         for (int i = 0; i < header.FrameCount; i++)
         {
-            var images = frameData.FrameToImage(i);
-            frameData.DecodedFrames.Add((images[0], images[1], images[2]));
+            var (layers, composite) = frameData.FrameToImage(i);
+            frameData.DecodedFrames.Add((layers[0], layers[1], layers[2]));
+            frameData.CompositeFrames.Add(composite);
         }
 
         return frameData;
     }
 
-    public Image<Rgba32>[] FrameToImage(int index)
+    public (Image<Rgba32>[] layers, Image composite) FrameToImage(int index)
     {
         var decodedFrameData = DecodeFrame(index);
         var frameSpan = decodedFrameData.AsSpan();
@@ -131,13 +135,6 @@ public class KwzFrameData
             metadata.LayerCFirstColor,
             metadata.LayerCSecondColor
         ];
-
-        // var layerOrder
-        //     = metadata.LayerDepths
-        //     .Select((depth, i) => (depth, i))
-        //     .OrderByDescending(x => x.depth)
-        //     .Select(x => x.i)
-        //     .ToArray();
 
         int width = 320;
         int height = 240;
@@ -167,7 +164,21 @@ public class KwzFrameData
             }
         }
 
-        return layerImages;
+        var layerOrder
+            = metadata.LayerDepths
+            .Select((depth, i) => (depth, i))
+            .OrderByDescending(x => x.depth)
+            .Select(x => x.i)
+            .ToArray();
+
+        Image<Rgba32>[] orderedLayerImages = [layerImages[layerOrder[0]], layerImages[layerOrder[1]], layerImages[layerOrder[2]]];
+        Image<Rgba32> compositeFrame = new Image<Rgba32>(width, height);
+        foreach (var layerImage in orderedLayerImages)
+        {
+            compositeFrame.Mutate(ctx => ctx.DrawImage(layerImage, 1));
+        }
+
+        return (layerImages, compositeFrame);
     }
 
     public byte[] DecodeFrame(
@@ -189,9 +200,10 @@ public class KwzFrameData
         int depth = 3;
         int height = 240;
         int width = 40;
+        int unitSize = 8;
 
-        byte[] rawCurrentFrameData = new byte[depth * height * width];
-        var currentFrameSpan = rawCurrentFrameData.AsSpan();
+        byte[] currentFrameData = new byte[depth * height * width * unitSize];
+        var currentFrameSpan = currentFrameData.AsSpan();
 
         // Assume FrameMeta and FrameOffsets are initialized and populated properly
         var meta = _frameMeta[frameIndex];
@@ -201,19 +213,19 @@ public class KwzFrameData
         for (int layerIndex = 0; layerIndex < 3; layerIndex++)
         {
             int layerLength = meta.LayerSizes[layerIndex];
-            offset += layerLength;
 
             if (layerLength == 38) continue;
             if ((diffingFlag >> layerIndex & 0x1) == 0) continue;
             if (!_layerVisibility[layerIndex]) continue;
 
             Memory<byte> compressedLayer = frameSectionData.Slice(offset, layerLength);
-            Span<byte> decompressedLayer = currentFrameSpan.Slice(layerIndex * height * width);
-            DecompressLayer(compressedLayer, decompressedLayer, offset);
+            Span<byte> decompressedLayer = currentFrameSpan.Slice(layerIndex * height * width * unitSize, height * width * unitSize);
+            DecompressLayer(compressedLayer, decompressedLayer);
+            offset += layerLength;
         }
 
         _prevDecodedFrame = frameIndex;
-        return rawCurrentFrameData;
+        return currentFrameData;
     }
 
     private int GetDiffingFlag(int frameIndex)
@@ -222,18 +234,19 @@ public class KwzFrameData
     }
 
     // Methods for decompressing each layer
-    public void DecompressLayer(ReadOnlyMemory<byte> compressedLayer, Span<byte> outputLayer, int layerDataOffset)
+    public void DecompressLayer(ReadOnlyMemory<byte> compressedLayer, Span<byte> outputLayer)
     {
-        int bitIndex = 0;
-        ushort bitValue = 0;
+        int bitIndex = 16;
+        int bitValue = 0;
+        int layerDataOffset = 0;
 
         int readBits(int numBits)
         {
             if (bitIndex + numBits > 16)
             {
-                ushort nextBits = BinaryPrimitives.ReadUInt16LittleEndian(compressedLayer.Span.Slice(layerDataOffset));
+                ushort nextBits = BinaryPrimitives.ReadUInt16LittleEndian(compressedLayer.Span[layerDataOffset..]);
                 layerDataOffset += 2;
-                bitValue |= (ushort)(nextBits << (16 - bitIndex));
+                bitValue |= nextBits << (16 - bitIndex);
                 bitIndex -= 16;
             }
             int result = bitValue & ((1 << numBits) - 1);
@@ -265,7 +278,7 @@ public class KwzFrameData
         void fillTileWithAlternatingLines2(Span<byte> tile, int lineIndexA, int lineIndexB)
         {
             byte[] lineA = lineTable[lineIndexA];
-            byte[] lineB = lineTable[shiftedLineIndexTable[lineIndexB]];
+            byte[] lineB = lineTable[lineIndexB];
             byte[] tileArray = [.. lineA, .. lineB, .. lineA, .. lineB, .. lineA, .. lineB, .. lineA, .. lineB];
             tileArray.CopyTo(tile);
         }
@@ -347,7 +360,7 @@ public class KwzFrameData
                                 break;
                             case 3:
                                 int lineIndex3A = readBits(13);
-                                int lineIndex3B = commonShiftedLineIndexTable[lineIndex3A];
+                                int lineIndex3B = shiftedLineIndexTable[lineIndex3A];
                                 fillTileWithAlternatingLines2(tile, lineIndex3A, lineIndex3B);
                                 break;
                             case 4:
@@ -395,7 +408,7 @@ public class KwzFrameData
     {
         for (int i = 0; i < 8; i++)
         {
-            tile.Slice(i * 8, 8).CopyTo(outputLayer.Slice(((y + i) * 320) + x));
+            tile.Slice(i * 8, 8).CopyTo(outputLayer[(((y + i) * 320) + x)..]);
         }
     }
 }

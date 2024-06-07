@@ -8,9 +8,10 @@ namespace LibKwz;
 public class KwzHeader
 {
     public readonly DateTime Epoch = new(2000, 1, 1);
+    public const string MAGIC = "KFH\x14";
 
     // Private fields for internal use
-    private char[] _magic = [.."KFH\x14"];
+    private char[] _magic = [.. MAGIC];
     private uint _size = 0xCC;
     private uint _crc32;
     private uint _creationTimestamp;
@@ -191,7 +192,7 @@ public class KwzHeader
         _crc32 = System.IO.Hashing.Crc32.HashToUInt32(data);
 
         writer
-            .WriteValue([.."KFH\x14"], Encoding.ASCII)
+            .WriteValue([.. MAGIC], Encoding.ASCII)
             .WriteValue(4 + (uint)data.Length)
             .WriteValue(_crc32)
             .WriteValue(data);

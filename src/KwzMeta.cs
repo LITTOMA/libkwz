@@ -4,6 +4,8 @@ namespace LibKwz;
 
 public class KwzMeta
 {
+    public const string MAGIC = "KMI\x05";
+    
     public static readonly Color[] FramePalette = new Color[]
     {
             Color.FromRgba(0xFF, 0xFF, 0xFF, 0xFF),
@@ -60,7 +62,7 @@ public class KwzMeta
         _size = (uint)_data.Length;
 
         writer
-            .WriteValue([.. "KTN\x05"], Encoding.ASCII)
+            .WriteValue([.. MAGIC], Encoding.ASCII)
             .WriteValue(_size)
             .WriteValue(_data);
     }
