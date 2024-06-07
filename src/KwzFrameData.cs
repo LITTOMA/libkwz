@@ -1,6 +1,8 @@
 using System;
 using System.Buffers.Binary;
 using System.IO;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace LibKwz;
 
@@ -76,7 +78,8 @@ public class KwzFrameData
     public uint Size => _size;
     public uint Crc32 { get => _crc32; set => _crc32 = value; }
     public byte[] Data { get => _data; set => _data = value; }
-    public byte[][] Frames { get; set; }
+    public List<(Image LayerA, Image LayerB, Image LayerC)> DecodedFrames { get; private set; }
+        = new List<(Image, Image, Image)>();
 
     public static KwzFrameData ReadFrom(BinaryReader reader, KwzHeader header, KwzMeta meta)
     {
@@ -100,7 +103,71 @@ public class KwzFrameData
         frameData._layerVisibility = [header.LayerAVisible, header.LayerBVisible, header.LayerCVisible];
         frameData._frameMeta = meta;
 
+        for (int i = 0; i < header.FrameCount; i++)
+        {
+            var images = frameData.FrameToImage(i);
+            frameData.DecodedFrames.Add((images[0], images[1], images[2]));
+        }
+
         return frameData;
+    }
+
+    public Image<Rgba32>[] FrameToImage(int index)
+    {
+        var decodedFrameData = DecodeFrame(index);
+        var frameSpan = decodedFrameData.AsSpan();
+        var layerAData = frameSpan[..(320 * 240)];
+        var layerBData = frameSpan[(320 * 240)..(320 * 240 * 2)];
+        var layerCData = frameSpan[(320 * 240 * 2)..];
+        var metadata = _frameMeta[index];
+        Color[] palette =
+        [
+            metadata.PaperColor,
+            metadata.LayerAFirstColor,
+            metadata.LayerASecondColor,
+            metadata.LayerBFirstColor,
+            metadata.LayerBSecondColor,
+            metadata.LayerBSecondColor,
+            metadata.LayerCFirstColor,
+            metadata.LayerCSecondColor
+        ];
+
+        // var layerOrder
+        //     = metadata.LayerDepths
+        //     .Select((depth, i) => (depth, i))
+        //     .OrderByDescending(x => x.depth)
+        //     .Select(x => x.i)
+        //     .ToArray();
+
+        int width = 320;
+        int height = 240;
+        Image<Rgba32>[] layerImages =
+        [
+            new Image<Rgba32>(width, height),
+            new Image<Rgba32>(width, height),
+            new Image<Rgba32>(width, height)
+        ];
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                int i = y * width + x;
+                byte layerAPaletteIndex = layerAData[i];
+                byte layerBPaletteIndex = layerBData[i];
+                byte layerCPaletteIndex = layerCData[i];
+
+                Rgba32 layerAPixel = palette[layerAPaletteIndex];
+                Rgba32 layerBPixel = palette[layerBPaletteIndex];
+                Rgba32 layerCPixel = palette[layerCPaletteIndex];
+
+                layerImages[0][x, y] = layerAPixel;
+                layerImages[1][x, y] = layerBPixel;
+                layerImages[2][x, y] = layerCPixel;
+            }
+        }
+
+        return layerImages;
     }
 
     public byte[] DecodeFrame(
