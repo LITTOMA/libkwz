@@ -55,10 +55,12 @@ public class KwzFrameData
         return combinations.ToArray();
     }
 
-    public static IEnumerable<int> RangeWithStep(int start, int count, int step)
+    public static IEnumerable<int> RangeWithStep(int start, int end, int step)
     {
-        return Enumerable.Range(0, count)
-                         .Select(x => start + x * step);
+        for (int i = start; i < end; i += step)
+        {
+            yield return i;
+        }
     }
 
     private char[] _magic = new char[4];
