@@ -138,7 +138,6 @@ public class KwzFrameData
             metadata.LayerASecondColor,
             metadata.LayerBFirstColor,
             metadata.LayerBSecondColor,
-            metadata.LayerBSecondColor,
             metadata.LayerCFirstColor,
             metadata.LayerCSecondColor
         ];
@@ -157,17 +156,21 @@ public class KwzFrameData
             for (int x = 0; x < width; x++)
             {
                 int i = y * width + x;
-                byte layerAPaletteIndex = layerAData[i];
-                byte layerBPaletteIndex = layerBData[i];
-                byte layerCPaletteIndex = layerCData[i];
+                for (int layerIndex = 0; layerIndex < 3; layerIndex++)
+                {
+                    byte paletteIndex = layerIndex switch
+                    {
+                        0 => layerAData[i],
+                        1 => layerBData[i],
+                        2 => layerCData[i],
+                        _ => 0
+                    };
 
-                Rgba32 layerAPixel = palette[layerAPaletteIndex];
-                Rgba32 layerBPixel = palette[layerBPaletteIndex];
-                Rgba32 layerCPixel = palette[layerCPaletteIndex];
+                    if (paletteIndex == 0) { continue; }
 
-                layerImages[0][x, y] = layerAPixel;
-                layerImages[1][x, y] = layerBPixel;
-                layerImages[2][x, y] = layerCPixel;
+                    Rgba32 pixel = palette[paletteIndex + (layerIndex * 2)];
+                    layerImages[layerIndex][x, y] = pixel;
+                }
             }
         }
 
