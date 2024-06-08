@@ -77,6 +77,13 @@ public class KwzFrameData
     private KwzMeta _frameMeta;
     private int _prevDecodedFrame = -1;
 
+
+    const int FrameDepth = 3;
+    const int FrameHeight = 240;
+    const int FrameWidth = 40;
+    const int FrameUnitSize = 8;
+    private byte[] _frameDecodeBuffer = new byte[FrameDepth * FrameHeight * FrameWidth * FrameUnitSize];
+
     public char[] Magic => _magic;
     public uint Size => _size;
     public uint Crc32 { get => _crc32; set => _crc32 = value; }
@@ -197,13 +204,8 @@ public class KwzFrameData
         }
 
 
-        int depth = 3;
-        int height = 240;
-        int width = 40;
-        int unitSize = 8;
 
-        byte[] currentFrameData = new byte[depth * height * width * unitSize];
-        var currentFrameSpan = currentFrameData.AsSpan();
+        var currentFrameSpan = _frameDecodeBuffer.AsSpan();
 
         // Assume FrameMeta and FrameOffsets are initialized and populated properly
         var meta = _frameMeta[frameIndex];
@@ -219,13 +221,13 @@ public class KwzFrameData
             if (!_layerVisibility[layerIndex]) continue;
 
             Memory<byte> compressedLayer = frameSectionData.Slice(offset, layerLength);
-            Span<byte> decompressedLayer = currentFrameSpan.Slice(layerIndex * height * width * unitSize, height * width * unitSize);
+            Span<byte> decompressedLayer = currentFrameSpan.Slice(layerIndex * FrameHeight * FrameWidth * FrameUnitSize, FrameHeight * FrameWidth * FrameUnitSize);
             DecompressLayer(compressedLayer, decompressedLayer);
             offset += layerLength;
         }
 
         _prevDecodedFrame = frameIndex;
-        return currentFrameData;
+        return _frameDecodeBuffer;
     }
 
     private int GetDiffingFlag(int frameIndex)
@@ -371,7 +373,7 @@ public class KwzFrameData
                                 int skipCount = readBits(5);
                                 // Handle tile skipping (adjust position accordingly)
                                 tileX += skipCount * 8;
-                                break;
+                                continue;
                             case 7:
                                 int pattern = readBits(2);
                                 bool isCommon = readBits(1) == 1;
