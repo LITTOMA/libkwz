@@ -1,419 +1,319 @@
-using System;
-using System.Buffers.Binary;
-using System.IO;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-
 namespace LibKwz;
 
-public class KwzFrameData
+public class KwzFrameData : IDisposable
 {
     public const string MAGIC = "KMC\x02";
-
-    private static readonly ushort[] commonLineIndexTable =
-    [
-        0x0000, 0x0CD0, 0x19A0, 0x02D9, 0x088B, 0x0051, 0x00F3, 0x0009,
-        0x001B, 0x0001, 0x0003, 0x05B2, 0x1116, 0x00A2, 0x01E6, 0x0012,
-        0x0036, 0x0002, 0x0006, 0x0B64, 0x08DC, 0x0144, 0x00FC, 0x0024,
-        0x001C, 0x0004, 0x0334, 0x099C, 0x0668, 0x1338, 0x1004, 0x166C
-    ];
-
-    private static readonly ushort[] commonShiftedLineIndexTable =
-    [
-        0x0000, 0x0CD0, 0x19A0, 0x0003, 0x02D9, 0x088B, 0x0051, 0x00F3,
-        0x0009, 0x001B, 0x0001, 0x0006, 0x05B2, 0x1116, 0x00A2, 0x01E6,
-        0x0012, 0x0036, 0x0002, 0x02DC, 0x0B64, 0x08DC, 0x0144, 0x00FC,
-        0x0024, 0x001C, 0x099C, 0x0334, 0x1338, 0x0668, 0x166C, 0x1004
-    ];
-
-    private static readonly byte[][] lineTable = BuildLineTable();
-    private static readonly ushort[] shiftedLineIndexTable = BuildShiftedLineIndexTable();
-
-    public static byte[][] BuildLineTable()
-    {
-        var combinations = from a in Enumerable.Range(0, 3)
-                           from b in Enumerable.Range(0, 3)
-                           from c in Enumerable.Range(0, 3)
-                           from d in Enumerable.Range(0, 3)
-                           from e in Enumerable.Range(0, 3)
-                           from f in Enumerable.Range(0, 3)
-                           from g in Enumerable.Range(0, 3)
-                           from h in Enumerable.Range(0, 3)
-                           select new byte[] { (byte)b, (byte)a, (byte)d, (byte)c, (byte)f, (byte)e, (byte)h, (byte)g };
-
-        return combinations.ToArray();
-    }
-
-    public static ushort[] BuildShiftedLineIndexTable()
-    {
-        var combinations = from a in RangeWithStep(0, 2187, 729)
-                           from b in RangeWithStep(0, 729, 243)
-                           from c in RangeWithStep(0, 243, 81)
-                           from d in RangeWithStep(0, 81, 27)
-                           from e in RangeWithStep(0, 27, 9)
-                           from f in RangeWithStep(0, 9, 3)
-                           from g in RangeWithStep(0, 3, 1)
-                           from h in RangeWithStep(0, 6561, 2187)
-                           select ushort.Parse($"{a + b + c + d + e + f + g + h}", System.Globalization.NumberStyles.Integer);
-
-        return combinations.ToArray();
-    }
-
+    public const int FramePixelCount = KwzLayerCodec.PixelCount * 3;
+    private char[] _magic = [.. MAGIC];
+    private byte[] _data = [];
+    private int[] _frameOffsets = [];
+    private KwzMeta _frameMeta = null!;
+    private KwzHeader _header = null!;
+    private readonly byte[] _frameDecodeBuffer = new byte[FramePixelCount];
+    private int _prevDecodedFrame = -1;
+    private List<(Image LayerA, Image LayerB, Image LayerC)>? _decodedFrames;
+    private List<Image>? _compositeFrames;
+    private ulong[]? _renderSnapshot;
+    public char[] Magic => _magic;
+    public uint Size => (uint)_data.Length + 4;
+    public uint Crc32 { get; set; }
+    public byte[] Data { get => _data; set { _data = value; Reindex(); Invalidate(); } }
+    public int FrameCount => _frameMeta.Entries.Length;
+    // Compatibility views are lazy. Prefer FrameToImage for bounded-memory processing.
+    public List<(Image LayerA, Image LayerB, Image LayerC)> DecodedFrames { get { EnsureImages(); return _decodedFrames!; } }
+    public List<Image> CompositeFrames { get { EnsureImages(); return _compositeFrames!; } }
+    public static byte[][] BuildLineTable() => KwzLayerCodec.BuildLineTable();
+    public static ushort[] BuildShiftedLineIndexTable() => KwzLayerCodec.Shift.Select(i => (ushort)i).ToArray();
     public static IEnumerable<int> RangeWithStep(int start, int end, int step)
     {
-        for (int i = start; i < end; i += step)
-        {
-            yield return i;
-        }
+        if (step <= 0) throw new ArgumentOutOfRangeException(nameof(step));
+        for (int i = start; i < end; i += step) yield return i;
+    }
+    internal static KwzFrameData CreateBlank(KwzHeader header, KwzMeta meta)
+    {
+        var entry = new KwzMeta.FrameMeta { LayerAFirstColorIndex=1, LayerASecondColorIndex=2,
+            LayerBFirstColorIndex=1, LayerBSecondColorIndex=5, LayerCFirstColorIndex=1, LayerCSecondColorIndex=4 };
+        byte[] layer = KwzLayerCodec.Encode(new byte[KwzLayerCodec.PixelCount]);
+        entry.LayerASize = entry.LayerBSize = entry.LayerCSize = checked((ushort)layer.Length);
+        entry.LayerADiffingFlag = entry.LayerBDiffingFlag = entry.LayerCDiffingFlag = true;
+        meta.ReplaceEntries([entry]);
+        var result = new KwzFrameData { _header=header, _frameMeta=meta, _data=[..layer,..layer,..layer] };
+        result.Reindex();
+        return result;
     }
 
-    private char[] _magic = new char[4];
-    private uint _size;
-    private uint _crc32;
-    private byte[]? _data;
-    private int[] _frameOffsets;
-    private bool[] _layerVisibility;
-    private KwzMeta _frameMeta;
-    private int _prevDecodedFrame = -1;
+    /// <summary>Reorder, duplicate, or remove frames. -1 inserts a blank frame. Pixel dependencies are rebuilt in bounded memory.</summary>
+    public void RemapFrames(IReadOnlyList<int> sourceFrames)
+    {
+        ArgumentNullException.ThrowIfNull(sourceFrames);
+        if (sourceFrames.Count is < 1 or > ushort.MaxValue) throw new ArgumentOutOfRangeException(nameof(sourceFrames));
+        if (sourceFrames.Any(i => i < -1 || i >= FrameCount)) throw new ArgumentOutOfRangeException(nameof(sourceFrames));
+        if(sourceFrames.SequenceEqual(Enumerable.Range(0,FrameCount))) return;
+        using var output = new MemoryStream();
+        var entries = new KwzMeta.FrameMeta[sourceFrames.Count];
+        byte[] previous = new byte[FramePixelCount];
+        for (int frame = 0; frame < sourceFrames.Count; frame++)
+        {
+            int source = sourceFrames[frame];
+            byte[] pixels = source < 0 ? new byte[FramePixelCount] : DecodeFrame(source);
+            var entry = _frameMeta.Entries[Math.Max(0, source)].Clone();
+            if (source < 0) { entry.SoundEffectFlags = 0; entry.CameraFlags = 0; }
+            ushort[] sizes = new ushort[3];
+            bool[] independent = new bool[3];
+            for (int layer = 0; layer < 3; layer++)
+            {
+                var target = pixels.AsSpan(layer * KwzLayerCodec.PixelCount, KwzLayerCodec.PixelCount);
+                byte[] encoded = KwzLayerCodec.Encode(target, frame == 0 ? default : previous.AsSpan(layer * KwzLayerCodec.PixelCount, KwzLayerCodec.PixelCount));
+                sizes[layer] = checked((ushort)encoded.Length);
+                independent[layer] = !KwzLayerEncoding.Read(encoded).UsesPreviousLayer;
+                output.Write(encoded);
+            }
+            entry.LayerASize=sizes[0]; entry.LayerBSize=sizes[1]; entry.LayerCSize=sizes[2];
+            entry.LayerADiffingFlag=independent[0]; entry.LayerBDiffingFlag=independent[1]; entry.LayerCDiffingFlag=independent[2];
+            entry.IsFrameBasedOnPrevFrame=!independent.All(x=>x);
+            entries[frame]=entry; previous=pixels;
+        }
+        WriteEditedPadding(output);
+        int thumb=sourceFrames.ToList().IndexOf(_header.ThumbnailFrameIndex);
+        _header.ThumbnailFrameIndex=(ushort)Math.Max(0,thumb);
+        _header.FrameCount=(ushort)entries.Length;
+        _frameMeta.ReplaceEntries(entries);
+        _data=output.ToArray(); Reindex(); Invalidate();
+    }
 
-
-    const int FrameDepth = 3;
-    const int FrameHeight = 240;
-    const int FrameWidth = 40;
-    const int FrameUnitSize = 8;
-    private byte[] _frameDecodeBuffer = new byte[FrameDepth * FrameHeight * FrameWidth * FrameUnitSize];
-
-    public char[] Magic => _magic;
-    public uint Size => _size;
-    public uint Crc32 { get => _crc32; set => _crc32 = value; }
-    public byte[] Data { get => _data; set => _data = value; }
-    public List<(Image LayerA, Image LayerB, Image LayerC)> DecodedFrames { get; private set; } = [];
-    public List<Image> CompositeFrames { get; private set; } = [];
-
+    public byte[] DecodeLayer(int frameIndex,int layerIndex)
+    {
+        if((uint)layerIndex>=3) throw new ArgumentOutOfRangeException(nameof(layerIndex));
+        return DecodeFrame(frameIndex).AsSpan(layerIndex*KwzLayerCodec.PixelCount,KwzLayerCodec.PixelCount).ToArray();
+    }
+    public void SetLayerPixels(int frameIndex,int layerIndex,ReadOnlySpan<byte> pixels)
+    {
+        if((uint)layerIndex>=3) throw new ArgumentOutOfRangeException(nameof(layerIndex));
+        KwzLayerCodec.ValidatePixels(pixels);
+        byte[] frame=DecodeFrame(frameIndex);
+        pixels.CopyTo(frame.AsSpan(layerIndex*KwzLayerCodec.PixelCount,KwzLayerCodec.PixelCount));
+        SetFramePixels(frameIndex,frame);
+    }
+    public void InsertBlankFrame(int index)
+    {
+        if((uint)index>FrameCount) throw new ArgumentOutOfRangeException(nameof(index));
+        var map=Enumerable.Range(0,FrameCount).ToList(); map.Insert(index,-1); RemapFrames(map);
+    }
+    /// <summary>Insert a duplicate at the given destination index, before the frame previously at that index.</summary>
+    public void DuplicateFrame(int sourceIndex,int destinationIndex)
+    {
+        CheckFrame(sourceIndex);
+        if((uint)destinationIndex>FrameCount) throw new ArgumentOutOfRangeException(nameof(destinationIndex));
+        var map=Enumerable.Range(0,FrameCount).ToList(); map.Insert(destinationIndex,sourceIndex); RemapFrames(map);
+    }
+    public void DeleteFrame(int index)
+    {
+        CheckFrame(index);
+        if(FrameCount==1) throw new InvalidOperationException("An animation must retain at least one frame.");
+        RemapFrames(Enumerable.Range(0,FrameCount).Where(i=>i!=index).ToArray());
+    }
+    /// <summary>Move one frame to its final zero-based destination index.</summary>
+    public void MoveFrame(int sourceIndex,int destinationIndex)
+    {
+        CheckFrame(sourceIndex); CheckFrame(destinationIndex);
+        var map=Enumerable.Range(0,FrameCount).ToList(); map.RemoveAt(sourceIndex); map.Insert(destinationIndex,sourceIndex); RemapFrames(map);
+    }
     public static KwzFrameData ReadFrom(BinaryReader reader, KwzHeader header, KwzMeta meta)
     {
-        var frameData = new KwzFrameData();
-
-        reader
-            .ReadChars(4, ref frameData._magic, Encoding.ASCII)
-            .ReadUInt32(ref frameData._size)
-            .ReadUInt32(ref frameData._crc32);
-
-        frameData._data = reader.ReadBytes((int)frameData._size - 4);
-
-        frameData._frameOffsets = new int[header.FrameCount];
-        int offset = 0;
-        for (int i = 0; i < header.FrameCount; i++)
+        var result = new KwzFrameData { _header = header, _frameMeta = meta };
+        reader.ReadChars(4, ref result._magic, Encoding.ASCII);
+        uint size = reader.ReadUInt32();
+        if (new string(result._magic) != MAGIC || size < 4 || size > int.MaxValue) throw new InvalidDataException("Invalid KMC section.");
+        result.Crc32 = reader.ReadUInt32();
+        result._data = reader.ReadExactlyBytes((int)size - 4);
+        if (meta.Entries.Length != header.FrameCount) throw new InvalidDataException("Frame count does not match KMI.");
+        result.Reindex();
+        return result;
+    }
+    private void Reindex()
+    {
+        _frameOffsets = new int[FrameCount + 1];
+        for (int i = 0; i < FrameCount; i++)
         {
-            frameData._frameOffsets[i] = offset;
-            offset += meta[i].LayerASize + meta[i].LayerBSize + meta[i].LayerCSize;
+            var sizes = _frameMeta.Entries[i].LayerSizes;
+            if (sizes.Any(s => s < 2 || (s & 1) != 0)) throw new InvalidDataException($"Invalid layer size in frame {i}.");
+            _frameOffsets[i + 1] = checked(_frameOffsets[i] + sizes.Sum(s => (int)s));
         }
-
-        frameData._layerVisibility = [header.LayerAVisible, header.LayerBVisible, header.LayerCVisible];
-        frameData._frameMeta = meta;
-
-        for (int i = 0; i < header.FrameCount; i++)
+        if (_frameOffsets[^1] > _data.Length) throw new InvalidDataException("KMI layer sizes exceed KMC data.");
+    }
+    public ReadOnlyMemory<byte> GetCompressedLayer(int frameIndex, int layerIndex)
+    {
+        CheckFrame(frameIndex);
+        if ((uint)layerIndex >= 3) throw new ArgumentOutOfRangeException(nameof(layerIndex));
+        var sizes = _frameMeta.Entries[frameIndex].LayerSizes;
+        int offset = _frameOffsets[frameIndex];
+        for (int i = 0; i < layerIndex; i++) offset += sizes[i];
+        return _data.AsMemory(offset, sizes[layerIndex]);
+    }
+    private void CheckFrame(int index)
+    {
+        if ((uint)index >= FrameCount) throw new ArgumentOutOfRangeException(nameof(index));
+    }
+    /// <summary>Returns an owned copy of all three indexed layers, including hidden layers. Supports arbitrary frame order.</summary>
+    public byte[] DecodeFrame(int frameIndex, int diffingFlag = 7, bool isPrevFrame = false)
+    {
+        CheckFrame(frameIndex);
+        // Iterative replay avoids stack overflow and stale data on backwards seeks.
+        // Flags are optimization hints; skip instructions determine actual dependencies.
+        if (frameIndex < _prevDecodedFrame) { Array.Clear(_frameDecodeBuffer); _prevDecodedFrame = -1; }
+        for (int frame = _prevDecodedFrame + 1; frame <= frameIndex; frame++)
+            for (int layer = 0; layer < 3; layer++)
+                KwzLayerCodec.Decode(GetCompressedLayer(frame, layer), _frameDecodeBuffer.AsSpan(layer * KwzLayerCodec.PixelCount, KwzLayerCodec.PixelCount));
+        _prevDecodedFrame = frameIndex;
+        return (byte[])_frameDecodeBuffer.Clone();
+    }
+    public void DecompressLayer(ReadOnlyMemory<byte> compressedLayer, Span<byte> outputLayer) => KwzLayerCodec.Decode(compressedLayer, outputLayer);
+    public byte[] CompressLayer(ReadOnlySpan<byte> pixels, ReadOnlySpan<byte> previous = default) => KwzLayerCodec.Encode(pixels, previous);
+    /// <summary>Replace one frame; re-encode the next frame to preserve its appearance despite delta dependencies.</summary>
+    public void SetFramePixels(int frameIndex, ReadOnlySpan<byte> pixels)
+    {
+        CheckFrame(frameIndex);
+        if (pixels.Length != FramePixelCount) throw new ArgumentException("Expected three 320x240 indexed layers.");
+        for (int layer = 0; layer < 3; layer++) KwzLayerCodec.ValidatePixels(pixels.Slice(layer * KwzLayerCodec.PixelCount, KwzLayerCodec.PixelCount));
+        if(DecodeFrame(frameIndex).AsSpan().SequenceEqual(pixels)) return;
+        byte[] previous = frameIndex == 0 ? new byte[FramePixelCount] : DecodeFrame(frameIndex - 1);
+        byte[]? next = frameIndex + 1 < FrameCount ? DecodeFrame(frameIndex + 1) : null;
+        var replacements = new List<byte[]>();
+        var keyframes = new List<bool>();
+        for (int f = 0; f < (next == null ? 1 : 2); f++)
         {
-            var (layers, composite) = frameData.FrameToImage(i);
-            frameData.DecodedFrames.Add((layers[0], layers[1], layers[2]));
-            frameData.CompositeFrames.Add(composite);
+            ReadOnlySpan<byte> target = f == 0 ? pixels : next;
+            ReadOnlySpan<byte> basis = f == 0 ? previous : pixels;
+            for (int layer = 0; layer < 3; layer++)
+            {
+                var slice = target.Slice(layer * KwzLayerCodec.PixelCount, KwzLayerCodec.PixelCount);
+                var encoded = KwzLayerCodec.Encode(slice, frameIndex == 0 && f == 0 ? default : basis.Slice(layer * KwzLayerCodec.PixelCount, KwzLayerCodec.PixelCount));
+                if (encoded.Length > ushort.MaxValue) throw new InvalidDataException("Compressed layer is too large.");
+                replacements.Add(encoded); keyframes.Add(!KwzLayerEncoding.Read(encoded).UsesPreviousLayer);
+            }
         }
-
-        return frameData;
+        int endFrame = frameIndex + (next == null ? 1 : 2);
+        using var output = new MemoryStream();
+        output.Write(_data.AsSpan(0, _frameOffsets[frameIndex]));
+        foreach (var layer in replacements) output.Write(layer);
+        output.Write(_data.AsSpan(_frameOffsets[endFrame], _frameOffsets[^1] - _frameOffsets[endFrame]));
+        WriteEditedPadding(output);
+        for (int f = frameIndex; f < endFrame; f++)
+        {
+            int p = (f - frameIndex) * 3;
+            var meta = _frameMeta.Entries[f];
+            meta.LayerASize = (ushort)replacements[p].Length; meta.LayerBSize = (ushort)replacements[p + 1].Length; meta.LayerCSize = (ushort)replacements[p + 2].Length;
+            meta.LayerADiffingFlag = keyframes[p]; meta.LayerBDiffingFlag = keyframes[p + 1]; meta.LayerCDiffingFlag = keyframes[p + 2];
+            meta.IsFrameBasedOnPrevFrame = !keyframes.Skip(p).Take(3).All(b => b);
+        }
+        _data = output.ToArray(); Reindex(); Invalidate();
     }
 
+    /// <summary>Discard original compression choices and compress all decoded frames anew.</summary>
+    public void RecompressFrames(bool interFrame = true)
+    {
+        using var output = new MemoryStream();
+        byte[] previous = new byte[FramePixelCount];
+        var sizes = new ushort[FrameCount, 3];
+        var independent = new bool[FrameCount, 3];
+        for (int frame = 0; frame < FrameCount; frame++)
+        {
+            byte[] pixels = DecodeFrame(frame);
+            for (int layer = 0; layer < 3; layer++)
+            {
+                var target = pixels.AsSpan(layer * KwzLayerCodec.PixelCount, KwzLayerCodec.PixelCount);
+                var basis = previous.AsSpan(layer * KwzLayerCodec.PixelCount, KwzLayerCodec.PixelCount);
+                byte[] encoded = KwzLayerCodec.Encode(target, frame == 0 || !interFrame ? default : basis);
+                sizes[frame, layer] = checked((ushort)encoded.Length);
+                independent[frame, layer] = !KwzLayerEncoding.Read(encoded).UsesPreviousLayer;
+                output.Write(encoded);
+            }
+            previous = pixels;
+        }
+        WriteEditedPadding(output);
+        for (int f = 0; f < FrameCount; f++)
+        {
+            var meta = _frameMeta.Entries[f];
+            meta.LayerASize = sizes[f, 0]; meta.LayerBSize = sizes[f, 1]; meta.LayerCSize = sizes[f, 2];
+            meta.LayerADiffingFlag = independent[f, 0]; meta.LayerBDiffingFlag = independent[f, 1]; meta.LayerCDiffingFlag = independent[f, 2];
+            meta.IsFrameBasedOnPrevFrame = !(independent[f, 0] && independent[f, 1] && independent[f, 2]);
+        }
+        _data = output.ToArray(); Reindex(); Invalidate();
+    }
+
+    private void WriteEditedPadding(MemoryStream output)
+    {
+        // Preserve opaque extensions, but regenerate ordinary section alignment after edits.
+        if (_data.Length - _frameOffsets[^1] > 3) output.Write(_data.AsSpan(_frameOffsets[^1]));
+        while ((output.Length & 3) != 0) output.WriteByte(0);
+    }
+    /// <summary>Rebuild KMC from decoded pixels, retaining original compression choices and unused bits.</summary>
+    public void WriteTo(BinaryWriter writer)
+    {
+        using var output = new MemoryStream(_data.Length);
+        byte[] current = new byte[FramePixelCount], previous = new byte[FramePixelCount];
+        for (int frame = 0; frame < FrameCount; frame++)
+        {
+            current.CopyTo(previous, 0);
+            for (int layer = 0; layer < 3; layer++)
+            {
+                var encoding = KwzLayerEncoding.Read(GetCompressedLayer(frame, layer));
+                var target = current.AsSpan(layer * KwzLayerCodec.PixelCount, KwzLayerCodec.PixelCount);
+                encoding.Decode(target);
+                output.Write(encoding.EncodePixels(target, previous.AsSpan(layer * KwzLayerCodec.PixelCount, KwzLayerCodec.PixelCount)));
+            }
+        }
+        // KMC alignment bytes are not included in KMI layer lengths.
+        output.Write(_data.AsSpan(_frameOffsets[^1]));
+        byte[] data = output.ToArray();
+        Crc32 = System.IO.Hashing.Crc32.HashToUInt32(data);
+        writer.WriteValue(_magic, Encoding.ASCII).WriteValue((uint)data.Length + 4).WriteValue(Crc32).WriteValue(data);
+    }
     public (Image<Rgba32>[] layers, Image composite) FrameToImage(int index)
     {
-        var decodedFrameData = DecodeFrame(index);
-        var frameSpan = decodedFrameData.AsSpan();
-        var layerAData = frameSpan[..(320 * 240)];
-        var layerBData = frameSpan[(320 * 240)..(320 * 240 * 2)];
-        var layerCData = frameSpan[(320 * 240 * 2)..];
-        var metadata = _frameMeta[index];
-        Color[] palette =
-        [
-            metadata.PaperColor,
-            metadata.LayerAFirstColor,
-            metadata.LayerASecondColor,
-            metadata.LayerBFirstColor,
-            metadata.LayerBSecondColor,
-            metadata.LayerCFirstColor,
-            metadata.LayerCSecondColor
-        ];
-
-        int width = 320;
-        int height = 240;
-        Image<Rgba32>[] layerImages =
-        [
-            new Image<Rgba32>(width, height),
-            new Image<Rgba32>(width, height),
-            new Image<Rgba32>(width, height)
-        ];
-
-        for (int y = 0; y < height; y++)
+        byte[] pixels = DecodeFrame(index);
+        var meta = _frameMeta.Entries[index];
+        Color[] colors = [meta.LayerAFirstColor, meta.LayerASecondColor, meta.LayerBFirstColor, meta.LayerBSecondColor, meta.LayerCFirstColor, meta.LayerCSecondColor];
+        var layers = new Image<Rgba32>[3];
+        for (int layer = 0; layer < 3; layer++)
         {
-            for (int x = 0; x < width; x++)
+            layers[layer] = new Image<Rgba32>(320, 240);
+            for (int y = 0; y < 240; y++)
+            for (int x = 0; x < 320; x++)
             {
-                int i = y * width + x;
-                for (int layerIndex = 0; layerIndex < 3; layerIndex++)
-                {
-                    byte paletteIndex = layerIndex switch
-                    {
-                        0 => layerAData[i],
-                        1 => layerBData[i],
-                        2 => layerCData[i],
-                        _ => 0
-                    };
-
-                    if (paletteIndex == 0) { continue; }
-
-                    Rgba32 pixel = palette[paletteIndex + (layerIndex * 2)];
-                    layerImages[layerIndex][x, y] = pixel;
-                }
+                int value = pixels[layer * KwzLayerCodec.PixelCount + y * 320 + x];
+                if (value != 0) layers[layer][x, y] = colors[layer * 2 + value - 1];
             }
         }
-
-        var layerOrder
-            = metadata.LayerDepths
-            .Select((depth, i) => (depth, i))
-            .OrderByDescending(x => x.depth)
-            .Select(x => x.i)
-            .ToArray();
-
-        Image<Rgba32>[] orderedLayerImages = [layerImages[layerOrder[0]], layerImages[layerOrder[1]], layerImages[layerOrder[2]]];
-        Image<Rgba32> compositeFrame = new Image<Rgba32>(width, height);
-        foreach (var layerImage in orderedLayerImages)
-        {
-            compositeFrame.Mutate(ctx => ctx.DrawImage(layerImage, 1));
-        }
-
-        return (layerImages, compositeFrame);
+        var composite = new Image<Rgba32>(320, 240, meta.PaperColor);
+        bool[] visible = [_header.LayerAVisible, _header.LayerBVisible, _header.LayerCVisible];
+        foreach (int layer in new[] { 2, 1, 0 }.OrderByDescending(i => meta.LayerDepths[i]))
+            if (visible[layer]) composite.Mutate(ctx => ctx.DrawImage(layers[layer], 1));
+        return (layers, composite);
     }
-
-    public byte[] DecodeFrame(
-        int frameIndex,
-        int diffingFlag = 0x07,
-        bool isPrevFrame = false)
+    private void EnsureImages()
     {
-        if (isPrevFrame)
+        // Public metadata remains mutable for compatibility; detect palette/depth/visibility changes.
+        ulong[] state=_frameMeta.Entries.Select(m=>(ulong)m.Flags | ((ulong)m.LayerADepth<<32) |
+            ((ulong)m.LayerBDepth<<40) | ((ulong)m.LayerCDepth<<48) | ((ulong)_header.LayerVisibilityFlags<<56)).ToArray();
+        if (_decodedFrames != null && _renderSnapshot!=null && state.AsSpan().SequenceEqual(_renderSnapshot)) return;
+        Dispose();
+        _decodedFrames = []; _compositeFrames = [];
+        for (int i = 0; i < FrameCount; i++)
         {
-            diffingFlag &= GetDiffingFlag(frameIndex + 1);
+            var (layers, composite) = FrameToImage(i);
+            _decodedFrames.Add((layers[0], layers[1], layers[2])); _compositeFrames.Add(composite);
         }
-
-        if (!(_prevDecodedFrame == (frameIndex - 1)) && diffingFlag > 0)
-        {
-            DecodeFrame(frameIndex - 1, diffingFlag, true);
-        }
-
-
-
-        var currentFrameSpan = _frameDecodeBuffer.AsSpan();
-
-        // Assume FrameMeta and FrameOffsets are initialized and populated properly
-        var meta = _frameMeta[frameIndex];
-        var offset = _frameOffsets[frameIndex];
-        Memory<byte> frameSectionData = _data.AsMemory();
-
-        for (int layerIndex = 0; layerIndex < 3; layerIndex++)
-        {
-            int layerLength = meta.LayerSizes[layerIndex];
-
-            if (layerLength == 38) continue;
-            if ((diffingFlag >> layerIndex & 0x1) == 0) continue;
-            if (!_layerVisibility[layerIndex]) continue;
-
-            Memory<byte> compressedLayer = frameSectionData.Slice(offset, layerLength);
-            Span<byte> decompressedLayer = currentFrameSpan.Slice(layerIndex * FrameHeight * FrameWidth * FrameUnitSize, FrameHeight * FrameWidth * FrameUnitSize);
-            DecompressLayer(compressedLayer, decompressedLayer);
-            offset += layerLength;
-        }
-
-        _prevDecodedFrame = frameIndex;
-        return _frameDecodeBuffer;
+        _renderSnapshot=state;
     }
-
-    private int GetDiffingFlag(int frameIndex)
+    private void Invalidate() { Dispose(); Array.Clear(_frameDecodeBuffer); _prevDecodedFrame = -1; }
+    public void Dispose()
     {
-        return (int)~((_frameMeta[frameIndex].Flags >> 4) & 0x07);
-    }
-
-    // Methods for decompressing each layer
-    public void DecompressLayer(ReadOnlyMemory<byte> compressedLayer, Span<byte> outputLayer)
-    {
-        int bitIndex = 16;
-        int bitValue = 0;
-        int layerDataOffset = 0;
-
-        int readBits(int numBits)
-        {
-            if (bitIndex + numBits > 16)
-            {
-                ushort nextBits = BinaryPrimitives.ReadUInt16LittleEndian(compressedLayer.Span[layerDataOffset..]);
-                layerDataOffset += 2;
-                bitValue |= nextBits << (16 - bitIndex);
-                bitIndex -= 16;
-            }
-            int result = bitValue & ((1 << numBits) - 1);
-            bitValue >>= numBits;
-            bitIndex += numBits;
-            return result;
-        }
-
-        // Helper methods to fill the tile based on the type
-        void fillTileWithLine(Span<byte> tile, int lineIndex, int offset)
-        {
-            var line = lineTable[lineIndex];
-            for (int i = 0; i < 8; i++)
-            {
-                line.CopyTo(tile.Slice(i * 8, 8));
-            }
-        }
-
-        void fillTileWithAlternatingLines(Span<byte> tile, int index)
-        {
-            int lineIndexA = commonLineIndexTable[index];
-            int lineIndexB = commonShiftedLineIndexTable[index];
-            byte[] lineA = lineTable[lineIndexA];
-            byte[] lineB = lineTable[lineIndexB];
-            byte[] tileArray = [.. lineA, .. lineB, .. lineA, .. lineB, .. lineA, .. lineB, .. lineA, .. lineB];
-            tileArray.CopyTo(tile);
-        }
-
-        void fillTileWithAlternatingLines2(Span<byte> tile, int lineIndexA, int lineIndexB)
-        {
-            byte[] lineA = lineTable[lineIndexA];
-            byte[] lineB = lineTable[lineIndexB];
-            byte[] tileArray = [.. lineA, .. lineB, .. lineA, .. lineB, .. lineA, .. lineB, .. lineA, .. lineB];
-            tileArray.CopyTo(tile);
-        }
-
-        void fillTileWithFlags(Span<byte> tile, byte flags)
-        {
-            for (int i = 0; i < 8; i++)
-            {
-                int lineIndex;
-                if ((flags & (1 << i)) != 0)
-                {
-                    lineIndex = commonLineIndexTable[readBits(5)];
-                }
-                else
-                {
-                    lineIndex = readBits(13);
-                }
-                byte[] line = lineTable[lineIndex];
-                line.CopyTo(tile.Slice(i * 8, 8));
-            }
-        }
-
-        void fillTileWithPattern(Span<byte> tile, int pattern, bool isCommon)
-        {
-            int lineIndexA, lineIndexB;
-            if (isCommon)
-            {
-                lineIndexA = commonLineIndexTable[readBits(5)];
-                lineIndexB = commonLineIndexTable[readBits(5)];
-                pattern = (pattern + 1) % 4;
-            }
-            else
-            {
-                lineIndexA = readBits(13);
-                lineIndexB = readBits(13);
-            }
-
-            byte[] lineA = lineTable[lineIndexA];
-            byte[] lineB = lineTable[lineIndexB];
-            for (int i = 0; i < 8; i++)
-            {
-                byte[] line = GetPatternLine(pattern, i, lineA, lineB);
-                line.CopyTo(tile.Slice(i * 8, 8));
-            }
-        }
-
-        for (int largeTileY = 0; largeTileY < 240; largeTileY += 128)
-        {
-            for (int largeTileX = 0; largeTileX < 320; largeTileX += 128)
-            {
-                for (int tileY = 0; tileY < 128; tileY += 8)
-                {
-                    int y = largeTileY + tileY;
-                    if (y >= 240)
-                        break;
-
-                    for (int tileX = 0; tileX < 128; tileX += 8)
-                    {
-                        int x = largeTileX + tileX;
-                        if (x >= 320)
-                            break;
-
-                        int tileType = readBits(3);
-                        Span<byte> tile = new byte[8 * 8];
-
-                        switch (tileType)
-                        {
-                            case 0:
-                                int lineIndex0 = commonLineIndexTable[readBits(5)];
-                                fillTileWithLine(tile, lineIndex0, 0);
-                                break;
-                            case 1:
-                                int lineIndex1 = readBits(13);
-                                fillTileWithLine(tile, lineIndex1, 0);
-                                break;
-                            case 2:
-                                int index2 = readBits(5);
-                                fillTileWithAlternatingLines(tile, index2);
-                                break;
-                            case 3:
-                                int lineIndex3A = readBits(13);
-                                int lineIndex3B = shiftedLineIndexTable[lineIndex3A];
-                                fillTileWithAlternatingLines2(tile, lineIndex3A, lineIndex3B);
-                                break;
-                            case 4:
-                                byte flags = (byte)readBits(8);
-                                fillTileWithFlags(tile, flags);
-                                break;
-                            case 5:
-                                int skipCount = readBits(5);
-                                // Handle tile skipping (adjust position accordingly)
-                                tileX += skipCount * 8;
-                                continue;
-                            case 7:
-                                int pattern = readBits(2);
-                                bool isCommon = readBits(1) == 1;
-                                fillTileWithPattern(tile, pattern, isCommon);
-                                break;
-                        }
-
-                        // Copy tile to the output layer at the correct position
-                        CopyTileToOutputLayer(tile, outputLayer, x, y);
-                    }
-                }
-            }
-        }
-    }
-
-    private byte[] GetPatternLine(int pattern, int i, byte[] lineA, byte[] lineB)
-    {
-        switch (pattern)
-        {
-            case 0:
-                return (i % 2 == 0) ? lineA : lineB;
-            case 1:
-                return (i % 3 == 0) ? lineB : lineA;
-            case 2:
-                return (i % 3 == 2) ? lineB : lineA;
-            case 3:
-                return (i % 2 == 1) ? lineB : lineA;
-            default:
-                return lineA;
-        }
-    }
-
-    private void CopyTileToOutputLayer(Span<byte> tile, Span<byte> outputLayer, int x, int y)
-    {
-        for (int i = 0; i < 8; i++)
-        {
-            tile.Slice(i * 8, 8).CopyTo(outputLayer[(((y + i) * 320) + x)..]);
-        }
+        if (_decodedFrames != null) foreach (var (a,b,c) in _decodedFrames) { a.Dispose(); b.Dispose(); c.Dispose(); }
+        if (_compositeFrames != null) foreach (var image in _compositeFrames) image.Dispose();
+        _decodedFrames = null; _compositeFrames = null; _renderSnapshot=null;
     }
 }

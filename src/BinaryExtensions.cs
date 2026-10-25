@@ -4,6 +4,13 @@ namespace LibKwz;
 
 public static class BinaryExtensions
 {
+    public static byte[] ReadExactlyBytes(this BinaryReader reader, int count)
+    {
+        if (count < 0) throw new InvalidDataException("Negative field length.");
+        var bytes = reader.ReadBytes(count);
+        if (bytes.Length != count) throw new InvalidDataException("Truncated KWZ field.");
+        return bytes;
+    }
     public static BinaryReader ReadUInt32(this BinaryReader reader, ref uint value)
     {
         value = reader.ReadUInt32();
@@ -24,7 +31,7 @@ public static class BinaryExtensions
 
     public static BinaryReader ReadBytes(this BinaryReader reader, int count, ref byte[] value)
     {
-        var bytes = reader.ReadBytes(count);
+        var bytes = reader.ReadExactlyBytes(count);
         value.AsSpan().Clear();
         bytes.AsSpan().CopyTo(value.AsSpan());
         return reader;
@@ -37,15 +44,11 @@ public static class BinaryExtensions
             encoding = Encoding.Unicode;
         }
 
-        var streamPosition = reader.BaseStream.Position;
-        var maxByteCount = encoding.GetMaxByteCount(count);
-        var bytes = reader.ReadBytes(maxByteCount);
-        var chars = encoding.GetChars(bytes).AsSpan(0, count);
-        var actualByteCount = encoding.GetByteCount(chars);
-        reader.BaseStream.Position = streamPosition + actualByteCount;
-
-        value.AsSpan().Clear();
-        chars.CopyTo(value.AsSpan());
+        // KWZ strings are fixed-width code units, including null padding and unpaired surrogates.
+        if (encoding.CodePage == Encoding.Unicode.CodePage)
+            for (int i = 0; i < count; i++) value[i] = (char)reader.ReadUInt16();
+        else
+            encoding.GetChars(reader.ReadExactlyBytes(count)).CopyTo(value, 0);
         return reader;
     }
 
@@ -89,8 +92,9 @@ public static class BinaryExtensions
             encoding = Encoding.Unicode;
         }
 
-        var bytes = encoding.GetBytes(value);
-        writer.Write(bytes);
+        if (encoding.CodePage == Encoding.Unicode.CodePage)
+            foreach (char c in value) writer.Write((ushort)c);
+        else writer.Write(encoding.GetBytes(value));
         return writer;
     }
 }

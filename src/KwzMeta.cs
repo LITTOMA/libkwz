@@ -17,17 +17,19 @@ public class KwzMeta
             Color.FromRgba(0x00, 0x00, 0x00, 0x00),
     };
 
-    private char[] _magic = new char[4];
+    private char[] _magic = [.. MAGIC];
     private uint _size;
-    private byte[]? _data;
+    private byte[] _data = [];
+    private byte[] _trailingData = [];
 
     public char[] Magic => _magic;
     public uint Size => _size;
     public byte[] Data { get => _data; set => _data = value; }
     public FrameMeta[] Entries { get; private set; } = Array.Empty<FrameMeta>();
+    internal void ReplaceEntries(FrameMeta[] entries) => Entries = entries;
 
     // Index shortcut
-    public FrameMeta? this[int index] => Entries == null || Entries.Length <= index ? null : Entries[index];
+    public FrameMeta? this[int index] => (uint)index >= Entries.Length ? null : Entries[index];
 
     public static KwzMeta ReadFrom(BinaryReader reader, KwzHeader header)
     {
@@ -36,7 +38,8 @@ public class KwzMeta
             .ReadChars(4, ref meta._magic, Encoding.ASCII)
             .ReadUInt32(ref meta._size);
 
-        meta._data = reader.ReadBytes((int)meta._size);
+        if (new string(meta._magic) != MAGIC || meta._size > int.MaxValue || meta._size < header.FrameCount * 28) throw new InvalidDataException("Invalid KMI section.");
+        meta._data = reader.ReadExactlyBytes((int)meta._size);
 
         var entries = new List<FrameMeta>();
         using var ms = new MemoryStream(meta._data);
@@ -46,6 +49,7 @@ public class KwzMeta
             entries.Add(FrameMeta.ReadFrom(br));
         }
         meta.Entries = entries.ToArray();
+        meta._trailingData = br.ReadExactlyBytes((int)(ms.Length - ms.Position));
 
         return meta;
     }
@@ -58,11 +62,12 @@ public class KwzMeta
         {
             entry.WriteTo(bw);
         }
+        bw.Write(_trailingData);
         _data = ms.ToArray();
         _size = (uint)_data.Length;
 
         writer
-            .WriteValue([.. MAGIC], Encoding.ASCII)
+            .WriteValue(_magic, Encoding.ASCII)
             .WriteValue(_size)
             .WriteValue(_data);
     }
@@ -96,6 +101,12 @@ public class KwzMeta
         public byte SoundEffectFlags { get => _soundEffectFlags; set => _soundEffectFlags = value; }
         public ushort Unknown { get => _unknown; set => _unknown = value; }
         public ushort CameraFlags { get => _cameraFlags; set => _cameraFlags = value; }
+        public FrameMeta Clone()
+        {
+            var result=(FrameMeta)MemberwiseClone();
+            result._frameAuthorId=(byte[])_frameAuthorId.Clone();
+            return result;
+        }
 
         public Color PaperColor => FramePalette[PaperColorIndex];
         public Color LayerAFirstColor => FramePalette[LayerAFirstColorIndex];
@@ -134,32 +145,32 @@ public class KwzMeta
         public byte LayerAFirstColorIndex
         {
             get => (byte)((_flags >> 8) & 0xF);
-            set => _flags = (uint)(((uint)(_flags & 0xFFFFF0FF) | (byte)((byte)(value & 0xF) << 8)));
+            set => _flags = (uint)(((uint)(_flags & 0xFFFFF0FF) | ((uint)(value & 0xF) << 8)));
         }
         public byte LayerASecondColorIndex
         {
             get => (byte)((_flags >> 12) & 0xF);
-            set => _flags = (uint)(((uint)(_flags & 0xFFFF0FFF) | (byte)((byte)(value & 0xF) << 12)));
+            set => _flags = (uint)(((uint)(_flags & 0xFFFF0FFF) | ((uint)(value & 0xF) << 12)));
         }
         public byte LayerBFirstColorIndex
         {
             get => (byte)((_flags >> 16) & 0xF);
-            set => _flags = (uint)(((uint)(_flags & 0xFFF0FFFF) | (byte)((byte)(value & 0xF) << 16)));
+            set => _flags = (uint)(((uint)(_flags & 0xFFF0FFFF) | ((uint)(value & 0xF) << 16)));
         }
         public byte LayerBSecondColorIndex
         {
             get => (byte)((_flags >> 20) & 0xF);
-            set => _flags = (uint)(((uint)(_flags & 0xFF0FFFFF) | (byte)((byte)(value & 0xF) << 20)));
+            set => _flags = (uint)(((uint)(_flags & 0xFF0FFFFF) | ((uint)(value & 0xF) << 20)));
         }
         public byte LayerCFirstColorIndex
         {
             get => (byte)((_flags >> 24) & 0xF);
-            set => _flags = (uint)(((uint)(_flags & 0xF0FFFFFF) | (byte)((byte)(value & 0xF) << 24)));
+            set => _flags = (uint)(((uint)(_flags & 0xF0FFFFFF) | ((uint)(value & 0xF) << 24)));
         }
         public byte LayerCSecondColorIndex
         {
             get => (byte)((_flags >> 28) & 0xF);
-            set => _flags = (uint)(((uint)(_flags & 0x0FFFFFFF) | (byte)((byte)(value & 0xF) << 28)));
+            set => _flags = (uint)(((uint)(_flags & 0x0FFFFFFF) | ((uint)(value & 0xF) << 28)));
         }
         #endregion
 

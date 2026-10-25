@@ -1,0 +1,235 @@
+{
+  "binary": "code-decompressed.bin",
+  "binarySha256": "fa933da9573525ef3dc46e2f1b8437c75149077efff9c5c1ba5ecea57f4de2dd",
+  "privateKeyFileOffset": "0x283800",
+  "privateKeyVirtualAddress": "0x00383800",
+  "privateKeyDerBytes": 1192,
+  "publicKeyFileOffset": "0x2836F0",
+  "publicKeyDerBytes": 270,
+  "embeddedKeyPairMatches": true,
+  "keyBits": 2048,
+  "algorithm": "RSASSA-PKCS1-v1_5 with SHA-256",
+  "files": 24,
+  "uniqueFiles": 12,
+  "allPassed": true,
+  "scope": "Cryptographic checks only; modified bodies are not written or tested in the game, and section CRCs are not updated for the one-bit mutation.",
+  "rows": [
+    {
+      "path": "sample-001.kwz",
+      "bytes": 146112,
+      "sha256": "0f926550ac9f27c5615582f96f457faf8dd41e1c98be64de6e5b6364d5060991",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-002.kwz",
+      "bytes": 312936,
+      "sha256": "08c712e70b6eb8ebf489511afb5cfe8ba8fe9bc8484b0607097d8d7f96f349ad",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-003.kwz",
+      "bytes": 698428,
+      "sha256": "afeeb4be17e353207fb9eb15e85064b8dc6be05f7e5a0310ceb8c47e508bed68",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-004.kwz",
+      "bytes": 32280,
+      "sha256": "2b13de5261dea4a649768f45ef6e83a9178de6756fd39ed073b9d573bcf26a6c",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-005.kwz",
+      "bytes": 38952,
+      "sha256": "ff7e81f48c95b080895efeea80cb41024a9c92b4e179aa577a955c2fccf84ddd",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-006.kwz",
+      "bytes": 226012,
+      "sha256": "ca197e9453b5eecd03f7468399e4f6148ab3c7569a09f66ff1bed9cdfefd2c57",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-007.kwz",
+      "bytes": 485656,
+      "sha256": "c2b40f550e9361a07fc3f59459978fdab0259aac7e245fab31bf923f4dfe847c",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-008.kwz",
+      "bytes": 71448,
+      "sha256": "01452677ac85f263f15fce001f8b30bdb5f30e389eec19654c9e607651b2c6a1",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-009.kwz",
+      "bytes": 13648,
+      "sha256": "d0878a31e452b45f48a7bb10083c34b10ced191a6e9a433d46622c9f85caf93a",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-010.kwz",
+      "bytes": 183292,
+      "sha256": "eed00b676071e5cbe6e2c46002eeb74f265d6059488f18d58c758b369e7a9235",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-011.kwz",
+      "bytes": 77076,
+      "sha256": "de7fbfabf94f4f1895576fefd93ee5cdad67e0dee60212389e5651d6033d2bd8",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-012.kwz",
+      "bytes": 213840,
+      "sha256": "f1fd1460f09a4ffe72dc68342b5eea0daef376e042913828d9d1091379ecc1b9",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-013.kwz",
+      "bytes": 146112,
+      "sha256": "0f926550ac9f27c5615582f96f457faf8dd41e1c98be64de6e5b6364d5060991",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-014.kwz",
+      "bytes": 312936,
+      "sha256": "08c712e70b6eb8ebf489511afb5cfe8ba8fe9bc8484b0607097d8d7f96f349ad",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-015.kwz",
+      "bytes": 698428,
+      "sha256": "afeeb4be17e353207fb9eb15e85064b8dc6be05f7e5a0310ceb8c47e508bed68",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-016.kwz",
+      "bytes": 32280,
+      "sha256": "2b13de5261dea4a649768f45ef6e83a9178de6756fd39ed073b9d573bcf26a6c",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-017.kwz",
+      "bytes": 38952,
+      "sha256": "ff7e81f48c95b080895efeea80cb41024a9c92b4e179aa577a955c2fccf84ddd",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-018.kwz",
+      "bytes": 226012,
+      "sha256": "ca197e9453b5eecd03f7468399e4f6148ab3c7569a09f66ff1bed9cdfefd2c57",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-019.kwz",
+      "bytes": 485656,
+      "sha256": "c2b40f550e9361a07fc3f59459978fdab0259aac7e245fab31bf923f4dfe847c",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-020.kwz",
+      "bytes": 71448,
+      "sha256": "01452677ac85f263f15fce001f8b30bdb5f30e389eec19654c9e607651b2c6a1",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-021.kwz",
+      "bytes": 13648,
+      "sha256": "d0878a31e452b45f48a7bb10083c34b10ced191a6e9a433d46622c9f85caf93a",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-022.kwz",
+      "bytes": 183292,
+      "sha256": "eed00b676071e5cbe6e2c46002eeb74f265d6059488f18d58c758b369e7a9235",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-023.kwz",
+      "bytes": 77076,
+      "sha256": "de7fbfabf94f4f1895576fefd93ee5cdad67e0dee60212389e5651d6033d2bd8",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    },
+    {
+      "path": "sample-024.kwz",
+      "bytes": 213840,
+      "sha256": "f1fd1460f09a4ffe72dc68342b5eea0daef376e042913828d9d1091379ecc1b9",
+      "originalValid": true,
+      "reproduced": true,
+      "oldSignatureRejected": true,
+      "newSignatureValid": true
+    }
+  ],
+  "pathPolicy": "Sample names are anonymous report-local identifiers; original filenames and directories are omitted."
+}

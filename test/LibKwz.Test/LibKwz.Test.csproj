@@ -24,4 +24,14 @@
     <ProjectReference Include="..\..\src\libkwz.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Copy test.kwz to output directory -->
+    <None Update="test.kwz">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="sound.kwz">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

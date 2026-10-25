@@ -7,8 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.4" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
     <PackageReference Include="System.IO.Hashing" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources/KwzSigningKey.der" LogicalName="LibKwz.Resources.KwzSigningKey.der" />
+    <EmbeddedResource Include="Resources/KwzVerificationKey.der" LogicalName="LibKwz.Resources.KwzVerificationKey.der" />
   </ItemGroup>
 
 </Project>

@@ -482,3 +482,12 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Local validation dependencies and disposable reference decoder
+.packages/
+.build-home/
+.validation/
+
+# Local executable and reverse-engineering memory dumps
+/code-full.bin
+/src/mem.bin

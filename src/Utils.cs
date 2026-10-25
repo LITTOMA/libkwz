@@ -35,7 +35,8 @@ public static class Utils
     public static string ToStringTrimed(this char[] chars)
     {
         var span = chars.AsSpan();
-        return new string(span[..span.IndexOf('\0')]);
+        int end = span.IndexOf('\0');
+        return new string(end < 0 ? span : span[..end]);
     }
 
     public static byte[] KwzBase32Decode(this byte[] data)
@@ -51,6 +52,41 @@ public static class Utils
     public static byte[] KwzBase32Encode(this byte[] data)
     {
         return Encoding.ASCII.GetBytes(Base32Codec.Encode(data));
+    }
+
+    public static void WriteWavFile(string filePath, byte[] audioData, int sampleRate, int channels = 1)
+    {
+        using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write))
+        using (var writer = new BinaryWriter(fileStream))
+        {
+            // WAV header fields
+            int byteRate = sampleRate * channels * sizeof(short);
+            int blockAlign = channels * sizeof(short);
+            int subChunk2Size = audioData.Length;
+            int chunkSize = 36 + subChunk2Size;
+
+            // Write RIFF header
+            writer.Write(Encoding.ASCII.GetBytes("RIFF"));
+            writer.Write(chunkSize);
+            writer.Write(Encoding.ASCII.GetBytes("WAVE"));
+
+            // Write fmt sub-chunk
+            writer.Write(Encoding.ASCII.GetBytes("fmt "));
+            writer.Write(16); // SubChunk1Size (16 for PCM)
+            writer.Write((short)1); // AudioFormat (1 for PCM)
+            writer.Write((short)channels); // NumChannels
+            writer.Write(sampleRate); // SampleRate
+            writer.Write(byteRate); // ByteRate
+            writer.Write((short)blockAlign); // BlockAlign
+            writer.Write((short)(sizeof(short) * 8)); // BitsPerSample
+
+            // Write data sub-chunk
+            writer.Write(Encoding.ASCII.GetBytes("data"));
+            writer.Write(subChunk2Size);
+
+            // Write audio data
+            writer.Write(audioData);
+        }
     }
 
     public static class Base32Codec

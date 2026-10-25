@@ -147,10 +147,18 @@ public class KwzHeader
             .ReadByte(ref header._frameSpeed)
             .ReadByte(ref header._layerVisibilityFlags);
 
+        if (new string(header._magic) != MAGIC || header._size != 0xCC) throw new InvalidDataException("Invalid KFH section.");
         return header;
     }
 
     public void WriteTo(BinaryWriter writer)
+    {
+        if (_rootAuthorId.Length != 10 || _parentAuthorId.Length != 10 || _currentAuthorId.Length != 10) throw new InvalidDataException("Author IDs must be 10 bytes.");
+        WriteFields(writer);
+    }
+
+    /// <summary>Explicitly regenerate filenames after changing author IDs or timestamps.</summary>
+    public void RegenerateFilenames()
     {
         Span<byte> rootFileNameSpan = stackalloc byte[17];
         Span<byte> parentFileNameSpan = stackalloc byte[17];
@@ -167,7 +175,13 @@ public class KwzHeader
         Utils.SetBytesValueStrict(currentFileNameSpan[..9], _currentAuthorId.AsSpan()[..9], 9);
         BinaryPrimitives.WriteUInt32LittleEndian(currentFileNameSpan[9..], _creationTimestamp);
         BinaryPrimitives.WriteUInt32LittleEndian(currentFileNameSpan[13..], _lastEditTimestamp);
+        _rootFilename = rootFileNameSpan.ToArray().KwzBase32Encode();
+        _parentFilename = parentFileNameSpan.ToArray().KwzBase32Encode();
+        _currentFilename = currentFileNameSpan.ToArray().KwzBase32Encode();
+    }
 
+    private void WriteFields(BinaryWriter writer)
+    {
         using var mem = new MemoryStream();
         using var memWriter = new BinaryWriter(mem);
         memWriter
@@ -180,9 +194,9 @@ public class KwzHeader
             .WriteValue(_rootAuthorName)
             .WriteValue(_parentAuthorName)
             .WriteValue(_currentAuthorName)
-            .WriteValue(rootFileNameSpan.ToArray().KwzBase32Encode())
-            .WriteValue(parentFileNameSpan.ToArray().KwzBase32Encode())
-            .WriteValue(currentFileNameSpan.ToArray().KwzBase32Encode())
+            .WriteValue(_rootFilename)
+            .WriteValue(_parentFilename)
+            .WriteValue(_currentFilename)
             .WriteValue(_frameCount)
             .WriteValue(_thumbnailFrameIndex)
             .WriteValue(_flags)
@@ -192,7 +206,7 @@ public class KwzHeader
         _crc32 = System.IO.Hashing.Crc32.HashToUInt32(data);
 
         writer
-            .WriteValue([.. MAGIC], Encoding.ASCII)
+            .WriteValue(_magic, Encoding.ASCII)
             .WriteValue(4 + (uint)data.Length)
             .WriteValue(_crc32)
             .WriteValue(data);

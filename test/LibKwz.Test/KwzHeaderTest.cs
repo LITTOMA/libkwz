@@ -156,6 +156,7 @@ public class KwzHeaderTest
 
         newHeader.CreationDateTime = new DateTime(2022, 1, 1);
         newHeader.LastEditDateTime = new DateTime(2022, 1, 1);
+        newHeader.RegenerateFilenames();
 
         using var stream2 = new MemoryStream();
         using var writer2 = new BinaryWriter(stream2);
