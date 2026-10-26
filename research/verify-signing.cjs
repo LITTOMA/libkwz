@@ -21,6 +21,7 @@ const walk = function*(directory) {
 };
 const rows=[];
 for(const filename of walk(corpusRoot)) {
+  const sampleName=`sample-${String(rows.length+1).padStart(3,'0')}.kwz`;
   const file=fs.readFileSync(filename), body=file.subarray(0,-256), signature=file.subarray(-256);
   const generated=crypto.sign('sha256',body,{key:privateKey,padding:crypto.constants.RSA_PKCS1_PADDING});
   const changed=Buffer.from(body); changed[12]^=1;
@@ -29,10 +30,10 @@ for(const filename of walk(corpusRoot)) {
   const reproduced=generated.equals(signature);
   const oldSignatureRejected=!crypto.verify('sha256',changed,publicKey,signature);
   const newSignatureValid=crypto.verify('sha256',changed,publicKey,newSignature);
-  if(!originalValid || !reproduced || !oldSignatureRejected || !newSignatureValid) throw Error(`Signing check failed: ${filename}`);
-  rows.push({path:path.relative(corpusRoot,filename),bytes:file.length,sha256:crypto.createHash('sha256').update(file).digest('hex'),originalValid,reproduced,oldSignatureRejected,newSignatureValid});
+  if(!originalValid || !reproduced || !oldSignatureRejected || !newSignatureValid) throw Error(`Signing check failed: ${sampleName}`);
+  rows.push({path:sampleName,bytes:file.length,sha256:crypto.createHash('sha256').update(file).digest('hex'),originalValid,reproduced,oldSignatureRejected,newSignatureValid});
 }
 if(!rows.length) throw Error('No KWZ files found; validation requires a nonempty corpus.');
-const result={binary:path.resolve(binaryPath),binarySha256:crypto.createHash('sha256').update(binary).digest('hex'),privateKeyFileOffset:'0x283800',privateKeyVirtualAddress:'0x00383800',privateKeyDerBytes:1192,publicKeyFileOffset:'0x2836F0',publicKeyDerBytes:270,embeddedKeyPairMatches:true,keyBits:publicKey.asymmetricKeyDetails.modulusLength,algorithm:'RSASSA-PKCS1-v1_5 with SHA-256',files:rows.length,uniqueFiles:new Set(rows.map(row=>row.sha256)).size,allPassed:true,scope:'Cryptographic checks only; modified bodies are not written or tested in the game, and section CRCs are not updated for the one-bit mutation.',rows};
+const result={binary:'code-decompressed.bin',binarySha256:crypto.createHash('sha256').update(binary).digest('hex'),privateKeyFileOffset:'0x283800',privateKeyVirtualAddress:'0x00383800',privateKeyDerBytes:1192,publicKeyFileOffset:'0x2836F0',publicKeyDerBytes:270,embeddedKeyPairMatches:true,keyBits:publicKey.asymmetricKeyDetails.modulusLength,algorithm:'RSASSA-PKCS1-v1_5 with SHA-256',files:rows.length,uniqueFiles:new Set(rows.map(row=>row.sha256)).size,allPassed:true,scope:'Cryptographic checks only; modified bodies are not written or tested in the game, and section CRCs are not updated for the one-bit mutation.',pathPolicy:'Sample names are anonymous report-local identifiers; original filenames and directories are omitted.',rows};
 if(reportPath) fs.writeFileSync(reportPath,JSON.stringify(result,null,2)+'\n');
 console.log(JSON.stringify({binary:result.binary,binarySha256:result.binarySha256,files:rows.length,originalSignaturesReproduced:rows.length,newSignaturesVerified:rows.length,keyBits:result.keyBits}));

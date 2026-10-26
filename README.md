@@ -181,7 +181,7 @@ Run from the library directory with the .NET 8 SDK or newer:
 
 ```powershell
 dotnet test test/LibKwz.Test/LibKwz.Test.csproj
-dotnet run --project test/LibKwz.Verify -- <NOTE_PROJECT>
+dotnet run --project test/LibKwz.Verify -- "<NOTE_PROJECT>"
 ```
 
 Tests find the Note project by walking up from the test executable; set `KWZ_CORPUS_ROOT` for another
@@ -197,7 +197,7 @@ files, and remove the bundle even when verification fails:
 $referencePath = Join-Path $env:TEMP ('libkwz-reference-' + [guid]::NewGuid() + '.cjs')
 try {
     Invoke-WebRequest 'https://cdn.jsdelivr.net/npm/flipnote.js@6.3.0/dist/cjs/KwzParser.cjs' -OutFile $referencePath
-    dotnet run --project test/LibKwz.Verify -- <NOTE_PROJECT> $referencePath verification-report.json
+    dotnet run --project test/LibKwz.Verify -- "<NOTE_PROJECT>" $referencePath verification-report.json
     if ($LASTEXITCODE -ne 0) { throw 'KWZ verification failed' }
 } finally {
     Remove-Item -LiteralPath $referencePath -ErrorAction SilentlyContinue
@@ -206,6 +206,10 @@ try {
 
 Signing checks use the embedded private key; the independent Node verifier reads the public DER resource.
 The game executable is not required.
+
+Replace `<NOTE_PROJECT>` with your local corpus workspace. Published verification reports use
+`sample-NNN.kwz` aliases because original KWZ filenames encode author IDs and timestamps.
+The aliases are local to each report; checksums and validation results remain unchanged.
 It handles one file at a time. KWZ output and decoded media remain in memory; the external oracle
 receives each KWZ through stdin and returns SHA-256 hashes and an independent Node crypto signature
 result. No frame PNGs, audio WAVs or duplicate KWZ corpus are generated. `verification-report.json`

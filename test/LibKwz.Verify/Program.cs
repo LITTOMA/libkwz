@@ -34,10 +34,12 @@ int totalFrames = 0; long totalBytes = 0; var types = new SortedSet<int>();
 var timer = Stopwatch.StartNew();
 foreach (string path in files)
 {
+    // KWZ filenames encode author IDs and timestamps. Use report-local aliases.
+    string sampleName = $"sample-{reports.Count + 1:D3}.kwz";
     byte[] original = File.ReadAllBytes(path);
     using var file = new KwzFile(new MemoryStream(original),verifyChecksums:true);
     byte[] rebuilt = file.ToArray();
-    Require(original.AsSpan().SequenceEqual(rebuilt), $"Binary mismatch: {path}");
+    Require(original.AsSpan().SequenceEqual(rebuilt), $"Binary mismatch: {sampleName}");
     Require(file.SignatureMatchesOriginalBody, "Original signature body changed.");
     OracleResult? reference = oracle == null ? null : Reference(original);
     bool originalSignatureValid=KwzSigning.Verify(original,key);
@@ -48,7 +50,7 @@ foreach (string path in files)
     for (int i = 0; i < file.Header.FrameCount; i++)
     {
         string digest = Hash(file.FrameData.DecodeFrame(i)); frames.Add(digest);
-        if (reference != null) Require(reference.frames[i] == digest, $"Reference pixels differ: {path}, frame {i}");
+        if (reference != null) Require(reference.frames[i] == digest, $"Reference pixels differ: {sampleName}, frame {i}");
         for (int layer = 0; layer < 3; layer++) types.UnionWith(KwzLayerEncoding.Read(file.FrameData.GetCompressedLayer(i, layer)).TileTypes);
     }
     var audio = new List<string>();
@@ -56,17 +58,17 @@ foreach (string path in files)
         for (int track = 0; track < 5; track++)
         {
             string digest = Hash(file.Sound.GetAudioTrack(track)); audio.Add(digest);
-            if (reference != null) Require(reference.audio[track] == digest, $"Reference audio differs: {path}, track {track}");
+            if (reference != null) Require(reference.audio[track] == digest, $"Reference audio differs: {sampleName}, track {track}");
         }
     file.FrameData.RecompressFrames();
     byte[] reencoded = file.ToArray();
     using var reread = new KwzFile(new MemoryStream(reencoded));
-    for (int i = 0; i < frames.Count; i++) Require(Hash(reread.FrameData.DecodeFrame(i)) == frames[i], $"Recompressed pixels differ: {path}, frame {i}");
+    for (int i = 0; i < frames.Count; i++) Require(Hash(reread.FrameData.DecodeFrame(i)) == frames[i], $"Recompressed pixels differ: {sampleName}, frame {i}");
     if (oracle != null)
     {
         var recompressedReference = Reference(reencoded);
-        Require(frames.SequenceEqual(recompressedReference.frames), $"Independent recompression mismatch: {path}");
-        Require(audio.SequenceEqual(recompressedReference.audio), $"Independent recompression audio mismatch: {path}");
+        Require(frames.SequenceEqual(recompressedReference.frames), $"Independent recompression mismatch: {sampleName}");
+        Require(audio.SequenceEqual(recompressedReference.audio), $"Independent recompression audio mismatch: {sampleName}");
     }
     // Exercise the editor as well: a replacement must not leak through subsequent skip runs.
     int editFrame = frames.Count / 2;
@@ -84,9 +86,9 @@ foreach (string path in files)
     if (oracle != null)
     {
         var editedReference = Reference(editedFile);
-        Require(editedReference.signatureValid==true,$"Independent signature check failed: {path}");
+        Require(editedReference.signatureValid==true,$"Independent signature check failed: {sampleName}");
         for (int i = 0; i < frames.Count; i++)
-            Require(editedReference.frames[i] == (i == editFrame ? Hash(edited) : frames[i]), $"Independent edit mismatch: {path}, frame {i}");
+            Require(editedReference.frames[i] == (i == editFrame ? Hash(edited) : frames[i]), $"Independent edit mismatch: {sampleName}, frame {i}");
     }
     // Nonsequential remapping tests first-frame dependencies, duplication, and a new blank frame.
     int[] map=[frames.Count-1,0,editFrame,editFrame,-1];
@@ -107,8 +109,8 @@ foreach (string path in files)
         Require(audio.SequenceEqual(remappedReference.audio),"Remapping changed audio tracks.");
     }
     totalFrames += frames.Count; totalBytes += original.Length;
-    reports.Add(new { path = Path.GetRelativePath(root, path), frames = frames.Count, bytes = original.Length, sha256 = Hash(original), rebuiltSha256 = Hash(rebuilt), recompressedBytes = reencoded.Length, binaryIdentical = true, originalSignatureValid, validOriginalSignatureReproduced = originalSignatureValid, editedSignatureVerified=true, remappedPixelsAndSignatureVerified=true, independentSigningAndRemapping=reference!=null, independentPixelsAndAudio = reference != null, recompressedIndependentPixelsAndAudio = reference != null, editedFrameAndSuccessorsVerified = reference != null, frameHashes = frames, audioHashes = audio });
-    Console.WriteLine($"PASS {Path.GetRelativePath(root, path)} ({frames.Count} frames, {original.Length} bytes)");
+    reports.Add(new { path = sampleName, frames = frames.Count, bytes = original.Length, sha256 = Hash(original), rebuiltSha256 = Hash(rebuilt), recompressedBytes = reencoded.Length, binaryIdentical = true, originalSignatureValid, validOriginalSignatureReproduced = originalSignatureValid, editedSignatureVerified=true, remappedPixelsAndSignatureVerified=true, independentSigningAndRemapping=reference!=null, independentPixelsAndAudio = reference != null, recompressedIndependentPixelsAndAudio = reference != null, editedFrameAndSuccessorsVerified = reference != null, frameHashes = frames, audioHashes = audio });
+    Console.WriteLine($"PASS {sampleName} ({frames.Count} frames, {original.Length} bytes)");
 }
 using(var blank=KwzFile.CreateBlank(3,24))
 {
@@ -122,7 +124,7 @@ using(var blank=KwzFile.CreateBlank(3,24))
         Require(result.signatureValid==true,"Independent new-animation signature invalid.");
     }
 }
-var summary = new { files = files.Length, frames = totalFrames, layers = totalFrames * 3, bytes = totalBytes, seconds = Math.Round(timer.Elapsed.TotalSeconds, 2), tileTypes = types.ToArray(), independentDecoder = oracle == null ? null : "flipnote.js 6.3.0", newAnimationVerified=true, reports };
+var summary = new { files = files.Length, frames = totalFrames, layers = totalFrames * 3, bytes = totalBytes, seconds = Math.Round(timer.Elapsed.TotalSeconds, 2), tileTypes = types.ToArray(), independentDecoder = oracle == null ? null : "flipnote.js 6.3.0", newAnimationVerified=true, pathPolicy="Sample names are anonymous report-local identifiers; original filenames and directories are omitted.", reports };
 if (args.Length > 2) File.WriteAllText(args[2], JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true }));
 Console.WriteLine($"PASS all {files.Length} files, {totalFrames} frames, {totalFrames * 3} layers, {totalBytes} bytes; tile types: {string.Join(',', types)}; {timer.Elapsed.TotalSeconds:F1}s");
 return 0;
