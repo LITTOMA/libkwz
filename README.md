@@ -235,6 +235,15 @@ not the safety of decoding arbitrary hostile image payloads or compatibility wit
 The local committed baseline was verified against [LITTOMA/libkwz commit 64eb082](https://github.com/LITTOMA/libkwz/commit/64eb08201e4d408beb259e3b4d14b1b130a20ca5).
 The pre-existing local sound implementation and tests were incorporated into this work.
 
+## License
+
+The original code and documentation in libkwz and KWZ Studio are licensed under
+the [MIT License](LICENSE).
+
+Bundled fonts and third-party dependencies retain their own licenses; see
+[Studio font notices](editor/Fonts/README.md). Nintendo game content and
+game-derived resources are not relicensed by this project's MIT License.
+
 ## References
 
 - [Flipnote Collective KWZ format research](https://github.com/Flipnote-Collective/flipnote-studio-3d-docs/wiki/KWZ-Format)
