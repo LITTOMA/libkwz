@@ -24,6 +24,30 @@ string originalHash=Hash(File.ReadAllBytes(sample));
 AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing=false }).SetupWithoutStarting();
 L.Initialize(Path.Combine(scratch,"settings.json"),"en-US");
 L.SetLanguage("en",persist:false);
+// Regression: launching from a ROM workspace must not discover or open any files.
+string previousDirectory=Environment.CurrentDirectory;
+string startupFixture=Path.Combine(scratch,"startup-workspace");
+Directory.CreateDirectory(Path.Combine(startupFixture,"rom"));
+Directory.CreateDirectory(Path.Combine(startupFixture,"tools","libkwz"));
+Directory.CreateDirectory(Path.Combine(startupFixture,"unpack"));
+string unsolicitedSample=Path.Combine(startupFixture,"unpack","unrequested.kwz");
+File.Copy(sample,unsolicitedSample,overwrite:true);
+MainWindow? blankWindow=null;
+try
+{
+    Environment.CurrentDirectory=startupFixture;
+    blankWindow=new MainWindow();blankWindow.Show();Dispatcher.UIThread.RunJobs();
+    blankWindow.UpdateLayout();AvaloniaHeadlessPlatform.ForceRenderTimerTick();Dispatcher.UIThread.RunJobs();
+    Check(blankWindow.Document.Path==null && blankWindow.Document.Note.Header.FrameCount==24 && blankWindow.Document.Pixels.All(p=>p==0),"Default startup stays blank even inside a ROM workspace with KWZ files");
+    Check(blankWindow.GetVisualDescendants().OfType<ListBox>().Count()==2 && !blankWindow.GetVisualDescendants().OfType<TextBlock>().Any(t=>t.Text?.Contains("ROMFS")==true),"Independent startup shows objects and history without a ROM media panel");
+    using var capture=blankWindow.CaptureRenderedFrame();capture!.Save(Path.Combine(scratch,"startup.png"));
+}
+finally
+{
+    Environment.CurrentDirectory=previousDirectory;
+    if(blankWindow!=null) { blankWindow.Document.Open(sample);blankWindow.Close(); }
+    File.Delete(unsolicitedSample);
+}
 var window=new MainWindow(sample);
 void Pump()
 {
@@ -266,6 +290,23 @@ try
         }
         Check(audioFiles==34,"Mixed playback audio matches independent decoder for all 34 samples");
     }
+    doc.New(2);
+    doc.AddObject(new CanvasObject{Kind=ObjectKind.Text,Text="SD",X=20,Y=30,FontSize=24});
+    byte[] sdProjectBefore=doc.Note.ToArray();
+    var sdObjectsBefore=doc.Objects.ToArray();
+    string[] sdHistoryBefore=doc.History;
+    string sdFolder=Path.Combine(scratch,"sd","private","Nintendo 3DS","app","JKZJ","000");
+    Directory.CreateDirectory(sdFolder);
+    using(var flattened=doc.CreateFlattenedNote())
+    {
+        var imported=KwzSdCard.Import(sdFolder,flattened);
+        using var readback=new KwzFile(imported.AnimationPath,verifyChecksums:true);
+        Check(readback.VerifySignature() && readback.FrameData.DecodeFrame(0).AsSpan().SequenceEqual(doc.RenderFrame(0)),"SD import contains flattened text objects and a valid game signature");
+        Check(KwzSdList.Read(File.ReadAllBytes(imported.ListPath)).Filenames.Single()==Path.GetFileName(imported.AnimationPath),"SD import registers the exported animation in the game catalog");
+        File.Delete(imported.AnimationPath);File.Delete(imported.ListPath);
+    }
+    Check(doc.Note.ToArray().AsSpan().SequenceEqual(sdProjectBefore) && doc.Objects.SequenceEqual(sdObjectsBefore) && doc.History.SequenceEqual(sdHistoryBefore),"SD import preserves the editable document and undo history");
+    Check(window.GetVisualDescendants().OfType<Button>().Any(b=>b.Name=="ImportToSdCard"),"SD import is available in the editor toolbar");
     doc.Open(sample);doc.Seek(Math.Min(12,count-1));Pump();
     using(var screenshot=window.CaptureRenderedFrame())
     {
@@ -275,6 +316,7 @@ try
     window.Width=1080;window.Height=760;Pump();
     using(var screenshot=window.CaptureRenderedFrame()) screenshot!.Save(Path.Combine(scratch,"compact.png"));
     Check(window.Canvas.Bounds.Width>=320 && window.Canvas.Bounds.Height>=180,"Minimum window size keeps preview usable");
+    SdPickerChecks.Run(window,root,scratch,Check,Pump);
     LocalizationChecks.Run(window,root,scratch,Check,Pump);
     Check(Hash(File.ReadAllBytes(sample))==originalHash,"Original sample remains untouched");
     File.WriteAllText(Path.Combine(root,"editor/smoke-report.json"),JsonSerializer.Serialize(new { passed=checks.Count,checks,originalSha256=originalHash,theme="Classic.Avalonia.Theme 11.3.0.3",renderer="Avalonia.Headless + Skia" },new JsonSerializerOptions { WriteIndented=true }));

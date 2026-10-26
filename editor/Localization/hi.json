@@ -75,8 +75,6 @@
   "Ellipse O": "दीर्घवृत्त O",
   "Text T": "टेक्स्ट T",
   "Brush width": "ब्रश की चौड़ाई",
-  "Double-click a sample to open it, or drop a KWZ file here.": "उदाहरण खोलने के लिए उस पर डबल-क्लिक करें, या यहाँ KWZ फ़ाइल छोड़ें।",
-  "Project media / ROMFS": "प्रोजेक्ट मीडिया / ROMFS",
   "Objects in this frame": "इस फ़्रेम के ऑब्जेक्ट",
   "History": "इतिहास",
   "Fit to window": "विंडो में फ़िट करें",
@@ -199,5 +197,15 @@
   "Signed KWZ exported; project objects remain editable: {0}": "हस्ताक्षरित KWZ निर्यात हुई; प्रोजेक्ट के ऑब्जेक्ट अभी भी संपादन योग्य हैं: {0}",
   "X {0} Y {1} · Layer {2}": "X {0} Y {1} · लेयर {2}",
   "320 × 240 · {0:0.#} fps · {1:0.00} s": "320 × 240 · {0:0.#} फ़्रेम/सेकंड · {1:0.00} सेकंड",
-  "The language preference could not be saved.": "भाषा की प्राथमिकता सहेजी नहीं जा सकी।"
+  "The language preference could not be saved.": "भाषा की प्राथमिकता सहेजी नहीं जा सकी।",
+  "Import to SD card": "SD कार्ड में आयात करें",
+  "Choose SD card…": "SD कार्ड चुनें…",
+  "Close the game before importing. Choose the destination folder. A new copy will be added; existing animations will be kept.": "आयात करने से पहले गेम बंद करें और गंतव्य फ़ोल्डर चुनें। एक नई प्रतिलिपि जोड़ी जाएगी; मौजूदा एनिमेशन सुरक्षित रहेंगे।",
+  "Importing to SD card…": "SD कार्ड में आयात हो रहा है…",
+  "Imported to SD card: {0}": "SD कार्ड में आयात किया गया: {0}",
+  "Refresh": "रीफ़्रेश करें",
+  "Choose the SD card root": "SD कार्ड की मूल डायरेक्टरी चुनें",
+  "Select the SD card root containing private/Nintendo 3DS/app, not an animation folder.": "ऐनिमेशन फ़ोल्डर के बजाय SD कार्ड की वह मूल डायरेक्टरी चुनें जिसमें private/Nintendo 3DS/app है।",
+  "SD card: {0}": "SD कार्ड: {0}",
+  "No animation folders were found. Create a folder in Flipnote Studio 3D on this card first.": "कोई ऐनिमेशन फ़ोल्डर नहीं मिला। पहले Flipnote Studio 3D में इस कार्ड पर एक फ़ोल्डर बनाएँ।"
 }

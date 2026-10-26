@@ -75,8 +75,6 @@
   "Ellipse O": "Elips O",
   "Text T": "Teks T",
   "Brush width": "Lebar kuas",
-  "Double-click a sample to open it, or drop a KWZ file here.": "Klik dua kali sampel untuk membukanya, atau lepaskan berkas KWZ di sini.",
-  "Project media / ROMFS": "Media proyek / ROMFS",
   "Objects in this frame": "Objek dalam bingkai ini",
   "History": "Riwayat",
   "Fit to window": "Sesuaikan dengan jendela",
@@ -199,5 +197,15 @@
   "Signed KWZ exported; project objects remain editable: {0}": "KWZ dengan tanda tangan digital telah diekspor; objek proyek tetap dapat diedit: {0}",
   "X {0} Y {1} · Layer {2}": "X {0} Y {1} · Lapisan {2}",
   "320 × 240 · {0:0.#} fps · {1:0.00} s": "320 × 240 · {0:0.#} fps · {1:0.00} s",
-  "The language preference could not be saved.": "Preferensi bahasa tidak dapat disimpan."
+  "The language preference could not be saved.": "Preferensi bahasa tidak dapat disimpan.",
+  "Import to SD card": "Impor ke kartu SD",
+  "Choose SD card…": "Pilih kartu SD…",
+  "Close the game before importing. Choose the destination folder. A new copy will be added; existing animations will be kept.": "Tutup gim sebelum mengimpor dan pilih folder tujuan. Salinan baru akan ditambahkan; animasi yang sudah ada akan tetap disimpan.",
+  "Importing to SD card…": "Mengimpor ke kartu SD…",
+  "Imported to SD card: {0}": "Diimpor ke kartu SD: {0}",
+  "Refresh": "Segarkan",
+  "Choose the SD card root": "Pilih direktori utama kartu SD",
+  "Select the SD card root containing private/Nintendo 3DS/app, not an animation folder.": "Pilih direktori utama kartu SD yang berisi private/Nintendo 3DS/app, bukan folder animasi.",
+  "SD card: {0}": "Kartu SD: {0}",
+  "No animation folders were found. Create a folder in Flipnote Studio 3D on this card first.": "Tidak ada folder animasi yang ditemukan. Buat folder di kartu ini melalui Flipnote Studio 3D terlebih dahulu."
 }

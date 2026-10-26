@@ -75,8 +75,6 @@
   "Ellipse O": "Elip O",
   "Text T": "Văn bản T",
   "Brush width": "Độ rộng cọ",
-  "Double-click a sample to open it, or drop a KWZ file here.": "Nhấp đúp vào mẫu để mở, hoặc thả tệp KWZ vào đây.",
-  "Project media / ROMFS": "Phương tiện dự án / ROMFS",
   "Objects in this frame": "Đối tượng trong khung hình này",
   "History": "Lịch sử",
   "Fit to window": "Vừa cửa sổ",
@@ -199,5 +197,15 @@
   "Signed KWZ exported; project objects remain editable: {0}": "Đã xuất KWZ có chữ ký số; các đối tượng trong dự án vẫn có thể chỉnh sửa: {0}",
   "X {0} Y {1} · Layer {2}": "X {0} Y {1} · Lớp {2}",
   "320 × 240 · {0:0.#} fps · {1:0.00} s": "320 × 240 · {0:0.#} fps · {1:0.00} s",
-  "The language preference could not be saved.": "Không thể lưu tùy chọn ngôn ngữ."
+  "The language preference could not be saved.": "Không thể lưu tùy chọn ngôn ngữ.",
+  "Import to SD card": "Nhập vào thẻ SD",
+  "Choose SD card…": "Chọn thẻ SD…",
+  "Close the game before importing. Choose the destination folder. A new copy will be added; existing animations will be kept.": "Đóng trò chơi trước khi nhập và chọn thư mục đích. Một bản sao mới sẽ được thêm vào; các hoạt hình hiện có sẽ được giữ nguyên.",
+  "Importing to SD card…": "Đang nhập vào thẻ SD…",
+  "Imported to SD card: {0}": "Đã nhập vào thẻ SD: {0}",
+  "Refresh": "Làm mới",
+  "Choose the SD card root": "Chọn thư mục gốc của thẻ SD",
+  "Select the SD card root containing private/Nintendo 3DS/app, not an animation folder.": "Chọn thư mục gốc của thẻ SD có chứa private/Nintendo 3DS/app, không chọn thư mục hoạt hình.",
+  "SD card: {0}": "Thẻ SD: {0}",
+  "No animation folders were found. Create a folder in Flipnote Studio 3D on this card first.": "Không tìm thấy thư mục hoạt hình. Trước tiên, hãy tạo một thư mục trên thẻ này trong Flipnote Studio 3D."
 }

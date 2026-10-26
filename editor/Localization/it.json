@@ -75,8 +75,6 @@
   "Ellipse O": "Ellisse O",
   "Text T": "Testo T",
   "Brush width": "Spessore del pennello",
-  "Double-click a sample to open it, or drop a KWZ file here.": "Fai doppio clic su un esempio per aprirlo o trascina qui un file KWZ.",
-  "Project media / ROMFS": "Media del progetto / ROMFS",
   "Objects in this frame": "Oggetti in questo fotogramma",
   "History": "Cronologia",
   "Fit to window": "Adatta alla finestra",
@@ -199,5 +197,15 @@
   "Signed KWZ exported; project objects remain editable: {0}": "KWZ firmato esportato; gli oggetti del progetto restano modificabili: {0}",
   "X {0} Y {1} · Layer {2}": "X {0} Y {1} · Livello {2}",
   "320 × 240 · {0:0.#} fps · {1:0.00} s": "320 × 240 · {0:0.#} fps · {1:0.00} s",
-  "The language preference could not be saved.": "Impossibile salvare la preferenza della lingua."
+  "The language preference could not be saved.": "Impossibile salvare la preferenza della lingua.",
+  "Import to SD card": "Importa su scheda SD",
+  "Choose SD card…": "Scegli scheda SD…",
+  "Close the game before importing. Choose the destination folder. A new copy will be added; existing animations will be kept.": "Chiudi il gioco prima di importare e scegli la cartella di destinazione. Verrà aggiunta una nuova copia; le animazioni esistenti saranno conservate.",
+  "Importing to SD card…": "Importazione su scheda SD…",
+  "Imported to SD card: {0}": "Importato su scheda SD: {0}",
+  "Refresh": "Aggiorna",
+  "Choose the SD card root": "Scegli la radice della scheda SD",
+  "Select the SD card root containing private/Nintendo 3DS/app, not an animation folder.": "Seleziona la radice della scheda SD contenente private/Nintendo 3DS/app, non una cartella di animazioni.",
+  "SD card: {0}": "Scheda SD: {0}",
+  "No animation folders were found. Create a folder in Flipnote Studio 3D on this card first.": "Nessuna cartella di animazioni trovata. Crea prima una cartella su questa scheda in Flipnote Studio 3D."
 }

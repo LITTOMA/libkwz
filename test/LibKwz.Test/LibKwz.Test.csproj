@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Compile Include="../Fixtures/FolderIconFixture.cs" Link="FolderIconFixture.cs" />
   </ItemGroup>
 
   <ItemGroup>

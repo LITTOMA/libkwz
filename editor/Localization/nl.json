@@ -75,8 +75,6 @@
   "Ellipse O": "Ellips O",
   "Text T": "Tekst T",
   "Brush width": "Penseelbreedte",
-  "Double-click a sample to open it, or drop a KWZ file here.": "Dubbelklik op een voorbeeld om het te openen of sleep een KWZ-bestand hierheen.",
-  "Project media / ROMFS": "Projectmedia / ROMFS",
   "Objects in this frame": "Objecten in dit frame",
   "History": "Geschiedenis",
   "Fit to window": "Aan venster aanpassen",
@@ -199,5 +197,15 @@
   "Signed KWZ exported; project objects remain editable: {0}": "Ondertekende KWZ geëxporteerd; projectobjecten blijven bewerkbaar: {0}",
   "X {0} Y {1} · Layer {2}": "X {0} Y {1} · Laag {2}",
   "320 × 240 · {0:0.#} fps · {1:0.00} s": "320 × 240 · {0:0.#} fps · {1:0.00} s",
-  "The language preference could not be saved.": "De taalvoorkeur kon niet worden opgeslagen."
+  "The language preference could not be saved.": "De taalvoorkeur kon niet worden opgeslagen.",
+  "Import to SD card": "Naar SD-kaart importeren",
+  "Choose SD card…": "SD-kaart kiezen…",
+  "Close the game before importing. Choose the destination folder. A new copy will be added; existing animations will be kept.": "Sluit het spel voordat je importeert en kies de doelmap. Er wordt een nieuwe kopie toegevoegd; bestaande animaties blijven behouden.",
+  "Importing to SD card…": "Importeren naar SD-kaart…",
+  "Imported to SD card: {0}": "Geïmporteerd naar SD-kaart: {0}",
+  "Refresh": "Vernieuwen",
+  "Choose the SD card root": "Hoofdmap van de SD-kaart kiezen",
+  "Select the SD card root containing private/Nintendo 3DS/app, not an animation folder.": "Selecteer de hoofdmap van de SD-kaart met private/Nintendo 3DS/app, niet een animatiemap.",
+  "SD card: {0}": "SD-kaart: {0}",
+  "No animation folders were found. Create a folder in Flipnote Studio 3D on this card first.": "Geen animatiemappen gevonden. Maak eerst in Flipnote Studio 3D een map op deze kaart."
 }

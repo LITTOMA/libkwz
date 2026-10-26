@@ -75,8 +75,6 @@
   "Ellipse O": "شكل بيضاوي O",
   "Text T": "نص T",
   "Brush width": "عرض الفرشاة",
-  "Double-click a sample to open it, or drop a KWZ file here.": "انقر نقرًا مزدوجًا على نموذج لفتحه، أو أفلت ملف KWZ هنا.",
-  "Project media / ROMFS": "وسائط المشروع / ROMFS",
   "Objects in this frame": "كائنات هذا الإطار",
   "History": "السجل",
   "Fit to window": "ملاءمة النافذة",
@@ -199,5 +197,15 @@
   "Signed KWZ exported; project objects remain editable: {0}": "تم تصدير ملف KWZ موقّع؛ ما زالت كائنات المشروع قابلة للتحرير: {0}",
   "X {0} Y {1} · Layer {2}": "X {0} Y {1} · الطبقة {2}",
   "320 × 240 · {0:0.#} fps · {1:0.00} s": "320 × 240 · {0:0.#} إطار/ث · {1:0.00} ث",
-  "The language preference could not be saved.": "تعذر حفظ تفضيل اللغة."
+  "The language preference could not be saved.": "تعذر حفظ تفضيل اللغة.",
+  "Import to SD card": "استيراد إلى بطاقة SD",
+  "Choose SD card…": "اختيار بطاقة SD…",
+  "Close the game before importing. Choose the destination folder. A new copy will be added; existing animations will be kept.": "أغلق اللعبة قبل الاستيراد واختر المجلد الوجهة. ستُضاف نسخة جديدة مع الاحتفاظ بالرسوم المتحركة الموجودة.",
+  "Importing to SD card…": "جارٍ الاستيراد إلى بطاقة SD…",
+  "Imported to SD card: {0}": "تم الاستيراد إلى بطاقة SD: {0}",
+  "Refresh": "تحديث",
+  "Choose the SD card root": "اختيار المجلد الجذر لبطاقة SD",
+  "Select the SD card root containing private/Nintendo 3DS/app, not an animation folder.": "اختر المجلد الجذر لبطاقة SD الذي يحتوي على private/Nintendo 3DS/app، وليس مجلد رسوم متحركة.",
+  "SD card: {0}": "بطاقة SD: {0}",
+  "No animation folders were found. Create a folder in Flipnote Studio 3D on this card first.": "لم يتم العثور على مجلدات للرسوم المتحركة. أنشئ أولاً مجلداً على هذه البطاقة في Flipnote Studio 3D."
 }

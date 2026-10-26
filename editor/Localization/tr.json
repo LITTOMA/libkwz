@@ -75,8 +75,6 @@
   "Ellipse O": "Elips O",
   "Text T": "Metin T",
   "Brush width": "Fırça kalınlığı",
-  "Double-click a sample to open it, or drop a KWZ file here.": "Açmak için bir örneğe çift tıklayın veya buraya bir KWZ dosyası bırakın.",
-  "Project media / ROMFS": "Proje medyası / ROMFS",
   "Objects in this frame": "Bu karedeki nesneler",
   "History": "Geçmiş",
   "Fit to window": "Pencereye sığdır",
@@ -199,5 +197,15 @@
   "Signed KWZ exported; project objects remain editable: {0}": "İmzalı KWZ dışa aktarıldı; proje nesneleri düzenlenebilir durumda: {0}",
   "X {0} Y {1} · Layer {2}": "X {0} Y {1} · Katman {2}",
   "320 × 240 · {0:0.#} fps · {1:0.00} s": "320 × 240 · {0:0.#} kare/sn · {1:0.00} sn",
-  "The language preference could not be saved.": "Dil tercihi kaydedilemedi."
+  "The language preference could not be saved.": "Dil tercihi kaydedilemedi.",
+  "Import to SD card": "SD karta aktar",
+  "Choose SD card…": "SD kart seç…",
+  "Close the game before importing. Choose the destination folder. A new copy will be added; existing animations will be kept.": "Aktarmadan önce oyunu kapatın ve hedef klasörü seçin. Yeni bir kopya eklenecek; mevcut animasyonlar korunacaktır.",
+  "Importing to SD card…": "SD karta aktarılıyor…",
+  "Imported to SD card: {0}": "SD karta aktarıldı: {0}",
+  "Refresh": "Yenile",
+  "Choose the SD card root": "SD kartın kök dizinini seç",
+  "Select the SD card root containing private/Nintendo 3DS/app, not an animation folder.": "Bir animasyon klasörü yerine private/Nintendo 3DS/app içeren SD kart kök dizinini seçin.",
+  "SD card: {0}": "SD kart: {0}",
+  "No animation folders were found. Create a folder in Flipnote Studio 3D on this card first.": "Animasyon klasörü bulunamadı. Önce Flipnote Studio 3D üzerinden bu kartta bir klasör oluşturun."
 }

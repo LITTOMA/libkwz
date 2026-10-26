@@ -4,6 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><RuntimeIdentifier>win-x64</RuntimeIdentifier>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../Fixtures/FolderIconFixture.cs" Link="FolderIconFixture.cs" />
     <ProjectReference Include="../../editor/KwzEditor.csproj" />
     <PackageReference Include="Avalonia.Headless" Version="11.3.22" />
   </ItemGroup>

@@ -75,8 +75,6 @@
   "Ellipse O": "Еліпс O",
   "Text T": "Текст T",
   "Brush width": "Товщина пензля",
-  "Double-click a sample to open it, or drop a KWZ file here.": "Двічі клацніть на прикладі, щоб відкрити його, або перетягніть сюди файл KWZ.",
-  "Project media / ROMFS": "Медіа проєкту / ROMFS",
   "Objects in this frame": "Об’єкти в цьому кадрі",
   "History": "Історія",
   "Fit to window": "Умістити у вікні",
@@ -199,5 +197,15 @@
   "Signed KWZ exported; project objects remain editable: {0}": "Підписаний KWZ експортовано; об’єкти проєкту залишаються редагованими: {0}",
   "X {0} Y {1} · Layer {2}": "X {0} Y {1} · Шар {2}",
   "320 × 240 · {0:0.#} fps · {1:0.00} s": "320 × 240 · {0:0.#} кадр/с · {1:0.00} с",
-  "The language preference could not be saved.": "Не вдалося зберегти вибрану мову."
+  "The language preference could not be saved.": "Не вдалося зберегти вибрану мову.",
+  "Import to SD card": "Імпорт на SD-картку",
+  "Choose SD card…": "Вибрати SD-картку…",
+  "Close the game before importing. Choose the destination folder. A new copy will be added; existing animations will be kept.": "Перед імпортом закрийте гру й виберіть папку призначення. Буде додано нову копію; наявні анімації збережуться.",
+  "Importing to SD card…": "Імпорт на SD-картку…",
+  "Imported to SD card: {0}": "Імпортовано на SD-картку: {0}",
+  "Refresh": "Оновити",
+  "Choose the SD card root": "Вибрати корінь SD-картки",
+  "Select the SD card root containing private/Nintendo 3DS/app, not an animation folder.": "Виберіть корінь SD-картки з private/Nintendo 3DS/app, а не папку з анімаціями.",
+  "SD card: {0}": "SD-картка: {0}",
+  "No animation folders were found. Create a folder in Flipnote Studio 3D on this card first.": "Папки з анімаціями не знайдено. Спочатку створіть папку на цій картці у Flipnote Studio 3D."
 }

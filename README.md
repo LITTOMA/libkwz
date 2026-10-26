@@ -92,6 +92,20 @@ Unchanged tracks retain their original compressed bytes for exact roundtrips.
 Track indices are 0 for BGM and 1–4 for the four sound effects. Modified audio receives fresh alignment
 and CRC values without changing the other tracks.
 
+## SD card catalogs and import
+
+`KwzSdList.Read(bytes).ToArray()` losslessly reads/writes the game's canonical `!!.lst`
+catalog, including its CRC halfword order, 61-byte XOR cycle and UTF-16 tail padding.
+`KwzSdCard.FindFolders(sdRoot)` discovers existing game folders; `KwzSdCard.Import(folder, note)`
+adds a new signed copy with a regenerated thumbnail, unused game filename and updated catalog.
+It preserves existing animations, backs up the old catalog, verifies writes and refuses damaged/full
+catalogs. Close the game before importing. KWZ Studio exposes this as **Import to SD card**.
+Studio remembers only the SD root and opens a fresh destination chooser on every import.
+It displays folder names and game `!.ico` icons, including custom-named empty folders
+without `!!.lst`. Refresh reloads both directories and icons. `KwzFolderIcon.Load(path)`
+decodes the signed KIC variant into an owned 24×24 RGBA image.
+See [format research, native evidence and verification limits](research/SD-LIST.md).
+
 ## Validation and safe saving
 
 Use `new KwzFile(path, verifyChecksums: true)` to reject bad CRC32 values in KFH/KTN/KMC/KSN.
@@ -226,7 +240,8 @@ strict CRC reads, audio replacement, refreshed image caches, and failed/atomic s
 also checks signed edited/remapped files and newly created animations. All 34 sample signatures are valid
 and are reproduced exactly by the embedded game key.
 
-Regression run on 2026-10-26: **77 library tests and 220 Studio checks pass**, including the corrected
+Regression run on 2026-10-26: **92 library tests and 257 Studio checks pass**, including SD catalog
+roundtrips, safe SD import and unchanged editable projects, as well as the corrected
 palette/transparent-paper JPEG export, all 20 embedded language catalogs, live language switching,
 RTL layout, language preferences, bundled Fusion Pixel rendering, saved-font compatibility, and
 preservation of unsaved projects and undo/redo history.

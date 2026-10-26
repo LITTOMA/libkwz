@@ -75,8 +75,6 @@
   "Ellipse O": "วงรี O",
   "Text T": "ข้อความ T",
   "Brush width": "ความกว้างแปรง",
-  "Double-click a sample to open it, or drop a KWZ file here.": "ดับเบิลคลิกตัวอย่างเพื่อเปิด หรือลากไฟล์ KWZ มาวางที่นี่",
-  "Project media / ROMFS": "สื่อในโปรเจกต์ / ROMFS",
   "Objects in this frame": "วัตถุในเฟรมนี้",
   "History": "ประวัติ",
   "Fit to window": "พอดีกับหน้าต่าง",
@@ -199,5 +197,15 @@
   "Signed KWZ exported; project objects remain editable: {0}": "ส่งออก KWZ ที่ลงลายเซ็นแล้ว วัตถุในโปรเจกต์ยังแก้ไขได้: {0}",
   "X {0} Y {1} · Layer {2}": "X {0} Y {1} · เลเยอร์ {2}",
   "320 × 240 · {0:0.#} fps · {1:0.00} s": "320 × 240 · {0:0.#} fps · {1:0.00} s",
-  "The language preference could not be saved.": "ไม่สามารถบันทึกการตั้งค่าภาษาได้"
+  "The language preference could not be saved.": "ไม่สามารถบันทึกการตั้งค่าภาษาได้",
+  "Import to SD card": "นำเข้าไปยังการ์ด SD",
+  "Choose SD card…": "เลือกการ์ด SD…",
+  "Close the game before importing. Choose the destination folder. A new copy will be added; existing animations will be kept.": "ปิดเกมก่อนนำเข้า แล้วเลือกโฟลเดอร์ปลายทาง ระบบจะเพิ่มสำเนาใหม่และเก็บภาพเคลื่อนไหวเดิมไว้",
+  "Importing to SD card…": "กำลังนำเข้าไปยังการ์ด SD…",
+  "Imported to SD card: {0}": "นำเข้าไปยังการ์ด SD แล้ว: {0}",
+  "Refresh": "รีเฟรช",
+  "Choose the SD card root": "เลือกโฟลเดอร์รากของการ์ด SD",
+  "Select the SD card root containing private/Nintendo 3DS/app, not an animation folder.": "เลือกโฟลเดอร์รากของการ์ด SD ที่มี private/Nintendo 3DS/app ไม่ใช่โฟลเดอร์แอนิเมชัน",
+  "SD card: {0}": "การ์ด SD: {0}",
+  "No animation folders were found. Create a folder in Flipnote Studio 3D on this card first.": "ไม่พบโฟลเดอร์แอนิเมชัน โปรดสร้างโฟลเดอร์บนการ์ดนี้ใน Flipnote Studio 3D ก่อน"
 }

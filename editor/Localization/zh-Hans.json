@@ -75,8 +75,6 @@
   "Ellipse O": "椭圆 O",
   "Text T": "文字 T",
   "Brush width": "笔宽",
-  "Double-click a sample to open it, or drop a KWZ file here.": "双击打开示例动画；也可以直接拖入 KWZ 文件。",
-  "Project media / ROMFS": "项目素材 / ROMFS",
   "Objects in this frame": "本帧对象",
   "History": "操作历史",
   "Fit to window": "适合窗口",
@@ -199,5 +197,15 @@
   "Signed KWZ exported; project objects remain editable: {0}": "已导出并签名；工程对象保持可编辑：{0}",
   "X {0} Y {1} · Layer {2}": "X {0} Y {1} · 图层 {2}",
   "320 × 240 · {0:0.#} fps · {1:0.00} s": "320 × 240 · {0:0.#} 帧/秒 · {1:0.00} 秒",
-  "The language preference could not be saved.": "无法保存语言偏好设置。"
+  "The language preference could not be saved.": "无法保存语言偏好设置。",
+  "Import to SD card": "导入到 SD 卡",
+  "Choose SD card…": "选择 SD 卡…",
+  "Close the game before importing. Choose the destination folder. A new copy will be added; existing animations will be kept.": "导入前请关闭游戏，并选择目标文件夹。导入会添加一个新副本，保留已有动画。",
+  "Importing to SD card…": "正在导入到 SD 卡…",
+  "Imported to SD card: {0}": "已导入到 SD 卡：{0}",
+  "Refresh": "刷新",
+  "Choose the SD card root": "选择 SD 卡根目录",
+  "Select the SD card root containing private/Nintendo 3DS/app, not an animation folder.": "请选择包含 private/Nintendo 3DS/app 的 SD 卡根目录，而非其中的动画文件夹。",
+  "SD card: {0}": "SD 卡：{0}",
+  "No animation folders were found. Create a folder in Flipnote Studio 3D on this card first.": "未找到动画文件夹。请先在主机的《动画记事本 3D》中，在这张卡上创建一个文件夹。"
 }

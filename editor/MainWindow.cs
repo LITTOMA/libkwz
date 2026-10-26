@@ -18,7 +18,7 @@ using AColor=Avalonia.Media.Color;
 
 namespace KwzStudio;
 
-public sealed class MainWindow : ClassicWindow
+public sealed partial class MainWindow : ClassicWindow
 {
     public EditorDocument Document { get; }=new();
     public PreviewCanvas Canvas { get; }
@@ -27,7 +27,7 @@ public sealed class MainWindow : ClassicWindow
     private readonly Dictionary<string,MenuItem> _languageItems = [];
     private readonly ComboBox _zoom = new();
     private readonly TextBlock _status=new(),_details=new(),_time=new(),_signature=new(),_fileLabel=new();
-    private readonly ListBox _assets=new(),_history=new(),_objectList=new();
+    private readonly ListBox _history=new(),_objectList=new();
     private readonly StackPanel _objectTransform=new(){Spacing=4},_textOptions=new(){Spacing=4},_shapeOptions=new(){Spacing=4};
     private readonly TextBlock _selectionTitle=new(){Text="No object selected",FontWeight=FontWeight.Bold};
     private readonly NumericUpDown _objectX=Number(0,-16384,16384),_objectY=Number(0,-16384,16384),_objectWidth=Number(80,1,16384),_objectHeight=Number(40,1,16384),_shapeStroke=Number(1,1,64);
@@ -46,9 +46,7 @@ public sealed class MainWindow : ClassicWindow
     private readonly Dictionary<DrawingTool,ToggleButton> _tools=[];
     private readonly DispatcherTimer _timer=new(){Interval=TimeSpan.FromMilliseconds(10)};
     private readonly Stopwatch _clock=new();
-    private readonly List<string> _assetPaths=[];
     private readonly AudioPreview _audio=new();
-    private readonly string? _root;
     private int _startFrame,_revision=-1;
     private bool _sync,_allowClose,_closePending;
     public MainWindow(string? initialPath=null)
@@ -56,7 +54,6 @@ public sealed class MainWindow : ClassicWindow
         Title="KWZ Studio";Width=1440;Height=960;MinWidth=1080;MinHeight=760;
         FontFamily=new FontFamily("Segoe UI, Microsoft YaHei UI, Nirmala UI, Leelawadee UI");FontSize=12;
         WindowStartupLocation=WindowStartupLocation.CenterScreen;
-        _root=FindRoot();
         Canvas=new PreviewCanvas(Document);Timeline=new TimelineControl(Document);
         Content=BuildWorkspace();
         BindContent(_shapeFilled,"Filled shape");BindContent(_loop,"Loop");BindContent(_onion,"Onion skin");BindContent(_grid,"8 px grid");
@@ -80,6 +77,7 @@ public sealed class MainWindow : ClassicWindow
         });
         Closing+=async (_,e)=>
         {
+            if(_sdImporting) { e.Cancel=true;return; }
             if(_allowClose || !Document.IsDirty) return;
             e.Cancel=true;
             if(_closePending) return;
@@ -92,27 +90,12 @@ public sealed class MainWindow : ClassicWindow
         {
             try
             {
-                if(_root!=null)
-                {
-                    string unpack=Path.Combine(_root,"unpack");
-                    if(Directory.Exists(unpack))
-                        _assetPaths.AddRange(Directory.EnumerateFiles(unpack,"*.kwz",SearchOption.AllDirectories).DistinctBy(Path.GetFileName).OrderBy(Path.GetFileName));
-                }
-                _assets.ItemsSource=_assetPaths.Select((p,i)=>$"{i+1:00}  {Path.GetFileNameWithoutExtension(p)[..Math.Min(18,Path.GetFileNameWithoutExtension(p).Length)]}…").ToArray();
-                string? first=initialPath??_assetPaths.FirstOrDefault();
-                if(first!=null && File.Exists(first)) { Document.Open(first); _assets.SelectedIndex=_assetPaths.IndexOf(first); }
+                if(initialPath!=null) Document.Open(initialPath);
                 else Document.New();
                 Refresh(); _status.Text=L.T("Ready · Drop a KWZ to edit. Space plays; arrow keys step through frames.");
             }
             catch(Exception error) { await Error(error); }
         };
-    }
-    private static string? FindRoot()
-    {
-        foreach(string start in new[]{AppContext.BaseDirectory,Environment.CurrentDirectory})
-            for(var d=new DirectoryInfo(start);d!=null;d=d.Parent)
-                if(Directory.Exists(Path.Combine(d.FullName,"rom")) && Directory.Exists(Path.Combine(d.FullName,"tools","libkwz"))) return d.FullName;
-        return null;
     }
     private static NumericUpDown Number(decimal value,decimal min,decimal max)=>new(){Value=value,Minimum=min,Maximum=max,Increment=1,FormatString="0",MinWidth=64};
     private T Localize<T>(T control,string key,Action<T,string> assign)
@@ -199,14 +182,15 @@ public sealed class MainWindow : ClassicWindow
     {
         var root=new Grid { RowDefinitions=new RowDefinitions("Auto,Auto,*,5,Auto,24"),Margin=new Thickness(3) };
         var menu=new Avalonia.Controls.Menu { ItemsSource=new[]{
-            Menu("_File",AsyncItem("New animation",New,"Ctrl+N"),AsyncItem("Open…",()=>Open(),"Ctrl+O"),AsyncItem("Save project",()=>Save(false),"Ctrl+S"),AsyncItem("Save project as…",()=>Save(true),"Ctrl+Shift+S"),AsyncItem("Export KWZ…",ExportKwz,"Ctrl+Shift+E"),new Separator(),Item("Exit",Close)),
+            Menu("_File",AsyncItem("New animation",New,"Ctrl+N"),AsyncItem("Open…",()=>Open(),"Ctrl+O"),AsyncItem("Save project",()=>Save(false),"Ctrl+S"),AsyncItem("Save project as…",()=>Save(true),"Ctrl+Shift+S"),AsyncItem("Export KWZ…",ExportKwz,"Ctrl+Shift+E"),AsyncItem("Import to SD card",ImportToSdCard),AsyncItem("Choose SD card…",async()=>{await ChooseSdCard();}),new Separator(),Item("Exit",Close)),
             Menu("_Edit",Item("Undo",()=>{Stop();Document.Undo();},"Ctrl+Z"),Item("Redo",()=>{Stop();Document.Redo();},"Ctrl+Y"),new Separator(),Item("Insert blank frame",Insert),Item("Duplicate current frame",Duplicate,"Ctrl+D"),Item("Delete current frame",Delete,"Delete"),Item("Move frame earlier",()=>Move(-1)),Item("Move frame later",()=>Move(1))),
             Menu("_Media",AsyncItem("Import image to current layer…",ImportImage),AsyncItem("Export current frame as PNG…",ExportImage),new Separator(),AsyncItem("Replace background music from WAV…",()=>ImportAudio(0)),AsyncItem("Export background music as WAV…",()=>ExportAudio(0)),AsyncItem("Replace sound effect 1…",()=>ImportAudio(1)),AsyncItem("Replace sound effect 2…",()=>ImportAudio(2)),AsyncItem("Replace sound effect 3…",()=>ImportAudio(3)),AsyncItem("Replace sound effect 4…",()=>ImportAudio(4))),
             Menu("_Playback",Item("Play / pause",TogglePlay,"Space"),Item("Go to first frame",()=>{Stop();Document.Seek(0);},"Home"),Item("Go to last frame",()=>{Stop();Document.Seek(Document.Note.Header.FrameCount-1);},"End")),
             LanguageMenu(),
             Menu("_Help",AsyncItem("Keyboard shortcuts and help",()=>Info("Help","Help text"))) } };
         root.Children.Add(menu);
-        var toolbar=Wrap(AsyncButton("New",New),AsyncButton("Open…",()=>Open()),AsyncButton("Save project",()=>Save(false)),AsyncButton("Export KWZ",ExportKwz),new Separator { Width=7 },_undo,_redo,new Separator{Width=7});
+        var sdImport=AsyncButton("Import to SD card",ImportToSdCard);sdImport.Name="ImportToSdCard";
+        var toolbar=Wrap(AsyncButton("New",New),AsyncButton("Open…",()=>Open()),AsyncButton("Save project",()=>Save(false)),AsyncButton("Export KWZ",ExportKwz),sdImport,new Separator { Width=7 },_undo,_redo,new Separator{Width=7});
         foreach(var (tool,title) in new[]{(DrawingTool.Select,"Select V"),(DrawingTool.Pencil,"Pencil B"),(DrawingTool.Eraser,"Eraser E"),(DrawingTool.Fill,"Fill G"),(DrawingTool.Rectangle,"Rectangle R"),(DrawingTool.Ellipse,"Ellipse O"),(DrawingTool.Text,"Text T")})
         {
             var button=BindContent(new ToggleButton { Name="Tool"+tool,Padding=new Thickness(8,4),Margin=new Thickness(3,2),IsChecked=tool==DrawingTool.Pencil },title);
@@ -215,14 +199,11 @@ public sealed class MainWindow : ClassicWindow
         var brushLabel=Label("Brush width");brushLabel.Margin=new Thickness(6,0,6,0);toolbar.Children.Add(brushLabel);_brush.Width=70;toolbar.Children.Add(_brush);
         toolbar.Margin=new Thickness(3,6);Grid.SetRow(toolbar,1);root.Children.Add(toolbar);
         var middle=new Grid { ColumnDefinitions=new ColumnDefinitions("190,5,*,5,330") };
-        var left=new Grid { RowDefinitions=new RowDefinitions("*,5,150,5,120") };
-        _assets.DoubleTapped+=async (_,_)=>{if(_assets.SelectedIndex>=0)await Open(_assetPaths[_assets.SelectedIndex]);};
-        Localize(_assets,"Double-click a sample to open it, or drop a KWZ file here.",(c,t)=>ToolTip.SetTip(c,t));
-        left.Children.Add(Section("Project media / ROMFS",_assets));
+        var left=new Grid { RowDefinitions=new RowDefinitions("*,5,180") };
         _objectList.ItemTemplate=new FuncDataTemplate<CanvasObject>((item,_)=>new TextBlock { Text=item?.Label,TextTrimming=TextTrimming.CharacterEllipsis });
         _objectList.SelectionChanged+=(_,_)=>{if(!_sync && _objectList.SelectedItem is CanvasObject item){Document.SelectObject(item.Id);SelectTool(DrawingTool.Select);}};
-        var objectSection=Section("Objects in this frame",_objectList);Grid.SetRow(objectSection,2);left.Children.Add(objectSection);
-        var history=Section("History",_history);Grid.SetRow(history,4);left.Children.Add(history);
+        left.Children.Add(Section("Objects in this frame",_objectList));
+        var history=Section("History",_history);Grid.SetRow(history,2);left.Children.Add(history);
         middle.Children.Add(left);
         var split=new GridSplitter { Width=5,HorizontalAlignment=HorizontalAlignment.Stretch };Grid.SetColumn(split,1);middle.Children.Add(split);
         var center=new Grid { RowDefinitions=new RowDefinitions("26,*,Auto") };
@@ -377,6 +358,7 @@ public sealed class MainWindow : ClassicWindow
     private void Stop(){_timer.Stop();_clock.Stop();_audio.Stop();_play.Content=L.T("▶ Play");}
     private async void OnKey(object? sender,KeyEventArgs e)
     {
+        if(_sdImporting) { e.Handled=true;return; }
         bool ctrl=e.KeyModifiers.HasFlag(KeyModifiers.Control),shift=e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         if(ctrl && shift && e.Key==Key.E){e.Handled=true;await Guard(ExportKwz);return;}
         if(ctrl && e.Key is Key.O or Key.S or Key.N) {e.Handled=true;await Guard(()=>e.Key==Key.O?Open():e.Key==Key.N?New():Save(shift));return;}
