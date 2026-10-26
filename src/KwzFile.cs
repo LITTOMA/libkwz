@@ -1,4 +1,7 @@
 using System.Security.Cryptography;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
 namespace LibKwz;
 
 /// <summary>A complete animation KWZ, with lossless section ordering and signature preservation.</summary>
@@ -121,9 +124,10 @@ public sealed class KwzFile : IDisposable
                 var info=SixLabors.ImageSharp.Image.Identify(Thumbnail.Data);
                 width=info.Width; height=info.Height;
             }
-            using var image=composite.CloneAs<SixLabors.ImageSharp.PixelFormats.Rgb24>();
-            SixLabors.ImageSharp.Processing.ProcessingExtensions.Mutate(image,ctx=>
-                SixLabors.ImageSharp.Processing.ResizeExtensions.Resize(ctx,width,height));
+            // JPEG has no alpha. Composite transparent paper over white before
+            // discarding alpha, or transparent regions would become black.
+            using var image=new Image<Rgb24>(composite.Width,composite.Height,Color.White);
+            image.Mutate(ctx=>ctx.DrawImage(composite,1).Resize(width,height));
             using var jpeg=new MemoryStream();
             image.Save(jpeg,new SixLabors.ImageSharp.Formats.Jpeg.JpegEncoder { Quality=quality });
             while((jpeg.Length&3)!=0) jpeg.WriteByte(0);

@@ -73,6 +73,7 @@ are retained; frame sound-effect triggers travel with their frames.
 dimensions (80 x 64 for newly created files). Ordinary saving does not regenerate it. The compatibility
 image collections refresh when palette, depth, or visibility metadata changes; previously returned
 cached images are disposed during refresh. Prefer owned `FrameToImage` results in editors.
+JPEG thumbnails use the standard KWZ palette and composite transparent paper over white.
 
 `FrameData.RecompressFrames()` discards the old encoding choices and performs fresh compression with
 inter-frame skip runs. Pass `false` to encode independent frames. `KwzLayerCodec.Encode` and `Decode`
@@ -108,6 +109,35 @@ in-memory processing. Library instances and their mutable metadata are not threa
 [KWZ Studio](editor/README.md) is the Avalonia editor built on this library, using the existing
 Classic.Avalonia.Theme package. Run `editor/start.cmd` after building. Save editable text and shapes in
 self-contained `.kwzproj` projects, then export signed game KWZs using the embedded signing resource. See the editor README for drawing, timeline, audio, and keyboard controls.
+
+The main workspace combines a frame preview, layer timeline, audio waveform, and drawing properties.
+
+![KWZ Studio with an animation preview, three-layer timeline, and audio waveform](editor/preview.png)
+
+Text and shapes remain editable objects that can be selected, moved, and resized before KWZ export.
+New text objects use the bundled **Fusion Pixel** font at 24 px (2× its native 12 px size), with no
+system font installation required. Existing project objects keep their saved font choice.
+
+![KWZ Studio editing a movable text object alongside rectangle and ellipse objects](editor/objects-preview.png)
+
+Studio includes **20 UI languages**: English, Simplified and Traditional Chinese, Japanese, Korean,
+French, German, Spanish, Italian, Brazilian Portuguese, Russian, Ukrainian, Polish, Dutch, Turkish,
+Arabic, Hindi, Indonesian, Vietnamese, and Thai. Choose a language from the **Language** menu;
+changes apply immediately and the preference is remembered. The first launch follows the system
+language, with English as the fallback. Switching languages preserves your project and undo history.
+Arabic uses a right-to-left interface while the artwork and timeline retain their original coordinates.
+
+<details>
+<summary>Studio in Japanese and Arabic</summary>
+
+![KWZ Studio with the Japanese interface](editor/preview-ja.png)
+
+![KWZ Studio with the Arabic interface and unchanged animation orientation](editor/preview-ar.png)
+
+</details>
+
+Translation catalogs are embedded in the app; no language downloads are needed.
+See [the localization guide](editor/LOCALIZATION.md) for message resources and validation.
 
 ## Signature and scope
 
@@ -191,6 +221,11 @@ creation, layer-only edits, timeline insert/delete/duplicate/reorder, metadata c
 strict CRC reads, audio replacement, refreshed image caches, and failed/atomic saves. Independent validation
 also checks signed edited/remapped files and newly created animations. All 34 sample signatures are valid
 and are reproduced exactly by the embedded game key.
+
+Regression run on 2026-10-26: **77 library tests and 220 Studio checks pass**, including the corrected
+palette/transparent-paper JPEG export, all 20 embedded language catalogs, live language switching,
+RTL layout, language preferences, bundled Fusion Pixel rendering, saved-font compatibility, and
+preservation of unsaved projects and undo/redo history.
 
 The image API remains on the compatible ImageSharp 3.1 branch (3.1.12). NuGet still reports security
 advisories for this dependency; these warnings are not suppressed. Moving to ImageSharp 4 is a separate

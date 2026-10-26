@@ -18,17 +18,17 @@ public sealed record CanvasObject
     public int Width { get; init; }=80;
     public int Height { get; init; }=40;
     public byte Ink { get; init; }=1;
-    public string Text { get; init; }="中文汉化";
+    public string Text { get; init; }="Text";
     public int FontSize { get; init; }=24;
-    public string FontFamily { get; init; }="Microsoft YaHei";
+    public string FontFamily { get; init; }=StudioFonts.DefaultFamily;
     public bool Filled { get; init; }=true;
     public int StrokeWidth { get; init; }=1;
     [System.Text.Json.Serialization.JsonIgnore] public Rect Bounds=>new(X,Y,Width,Height);
-    [System.Text.Json.Serialization.JsonIgnore] public string Label=>$"{(char)('A'+Layer)} · {(Kind==ObjectKind.Text?Text.Replace('\n',' '):Kind==ObjectKind.Rectangle?"矩形":"椭圆")}";
+    [System.Text.Json.Serialization.JsonIgnore] public string Label=>$"{(char)('A'+Layer)} · {(Kind==ObjectKind.Text?Text.Replace('\n',' '):L.T(Kind==ObjectKind.Rectangle?"Rectangle":"Ellipse"))}";
     public CanvasObject MeasureText()
     {
         if(Kind!=ObjectKind.Text)return this;
-        using var face=SKTypeface.FromFamilyName(FontFamily);
+        using var face=StudioFonts.CreateTypeface(FontFamily);
         using var paint=new SKPaint { Typeface=face,TextSize=FontSize };
         string[] lines=Text.Replace("\r","").Split('\n');
         return this with { Width=Math.Max(1,(int)Math.Ceiling(lines.Max(line=>paint.MeasureText(line)))),
@@ -42,7 +42,7 @@ public sealed record CanvasObject
         canvas.Clear(SKColors.Transparent);
         if(Kind==ObjectKind.Text)
         {
-            using var face=SKTypeface.FromFamilyName(FontFamily);
+            using var face=StudioFonts.CreateTypeface(FontFamily);
             paint.Typeface=face;paint.TextSize=FontSize;paint.Style=SKPaintStyle.Fill;
             float baseline=Y-paint.FontMetrics.Ascent;
             foreach(string line in Text.Replace("\r","").Split('\n')) { canvas.DrawText(line,X,baseline,paint);baseline+=FontSize*1.25f; }
@@ -62,6 +62,6 @@ public sealed record CanvasObject
             X is <-16384 or >16384 || Y is <-16384 or >16384 || Width is <1 or >16384 || Height is <1 or >16384 ||
             Ink>2 || FontSize is <6 or >256 || StrokeWidth is <1 or >64 || Text==null || Text.Length>10000 ||
             string.IsNullOrWhiteSpace(FontFamily) || FontFamily.Length>256)
-            throw new InvalidDataException("文字或形状对象的数据无效。");
+            throw new InvalidDataException(L.T("Invalid text or shape object data."));
     }
 }

@@ -1,0 +1,150 @@
+{
+  "languages": 20,
+  "messagesPerLanguage": 201,
+  "renderer": "Avalonia.Headless \u002B Skia",
+  "checks": [
+    {
+      "language": "en",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "zh-Hans",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "zh-Hant",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "ja",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "ko",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "fr",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "de",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "es",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "it",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "pt-BR",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "ru",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "uk",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "pl",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "nl",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "tr",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "ar",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "hi",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "id",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "vi",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    },
+    {
+      "language": "th",
+      "messages": 201,
+      "liveSwitch": true,
+      "projectUnchanged": true,
+      "rendered": true
+    }
+  ],
+  "preferencesVerified": true,
+  "undoRedoVerified": true,
+  "rtlArtworkUnchanged": true
+}

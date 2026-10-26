@@ -25,8 +25,8 @@ public sealed class EditorDocument : IDisposable
     public bool IsDirty=>!_savedHash.AsSpan().SequenceEqual(_history[_position].Hash);
     public bool CanUndo=>_position>0;
     public bool CanRedo=>_position+1<_history.Count;
-    public string[] History=>_history.Take(_position+1).Select(s=>s.Name).Reverse().ToArray();
-    public EditorDocument()=>Reset("新建动画",false);
+    public string[] History=>_history.Take(_position+1).Select(s=>L.T(s.Name)).Reverse().ToArray();
+    public EditorDocument()=>Reset("New animation",false);
     public void Open(string path)
     {
         bool isProject=path.EndsWith(".kwzproj",StringComparison.OrdinalIgnoreCase);
@@ -34,17 +34,17 @@ public sealed class EditorDocument : IDisposable
         var next=new KwzFile(new MemoryStream(project.Item1),verifyChecksums:true);
         try
         {
-            foreach(var item in project.Item2) { if(item==null)throw new InvalidDataException("工程对象为空。");item.Validate(next.Header.FrameCount); }
-            if(project.Item2.Select(o=>o.Id).Distinct().Count()!=project.Item2.Length)throw new InvalidDataException("工程对象编号重复。");
+            foreach(var item in project.Item2) { if(item==null)throw new InvalidDataException(L.T("A project object is null."));item.Validate(next.Header.FrameCount); }
+            if(project.Item2.Select(o=>o.Id).Distinct().Count()!=project.Item2.Length)throw new InvalidDataException(L.T("Project object IDs are duplicated."));
         }
         catch { next.Dispose();throw; }
         Note.Dispose();Note=next;_objects.Clear();_objects.AddRange(project.Item2);SelectedId=null;
-        Path=System.IO.Path.GetFullPath(path);Frame=Math.Clamp(project.Item3,0,Note.Header.FrameCount-1);Reset("打开动画",true);
+        Path=System.IO.Path.GetFullPath(path);Frame=Math.Clamp(project.Item3,0,Note.Header.FrameCount-1);Reset("Open animation",true);
     }
     public void New(int frames=24)
     {
         var next=KwzFile.CreateBlank(frames,12);
-        Note.Dispose();Note=next;Path=null;Frame=0;SelectedId=null;_objects.Clear();Reset("新建动画",false);
+        Note.Dispose();Note=next;Path=null;Frame=0;SelectedId=null;_objects.Clear();Reset("New animation",false);
     }
     private State Snapshot(string label)
     {
@@ -103,28 +103,28 @@ public sealed class EditorDocument : IDisposable
     }
     public void Undo() { if(CanUndo) { LoadSnapshot(_history[--_position]);Revision++;Refresh(); } }
     public void Redo() { if(CanRedo) { LoadSnapshot(_history[++_position]);Revision++;Refresh(); } }
-    public void AddObject(CanvasObject item)=>EditState(item.Kind==ObjectKind.Text?"添加文字对象":"添加形状对象",()=>
+    public void AddObject(CanvasObject item)=>EditState(item.Kind==ObjectKind.Text?"Add text object":"Add shape object",()=>
     {
         item=item.MeasureText();item.Validate(Note.Header.FrameCount);
-        if(_objects.Any(o=>o.Id==item.Id))throw new ArgumentException("对象编号重复。");
+        if(_objects.Any(o=>o.Id==item.Id))throw new ArgumentException(L.T("Duplicate object ID."));
         _objects.Add(item);SelectedId=item.Id;
     });
-    public void UpdateObject(CanvasObject item,string label="修改对象")=>EditState(label,()=>
+    public void UpdateObject(CanvasObject item,string label="Edit object")=>EditState(label,()=>
     {
         item=item.MeasureText();item.Validate(Note.Header.FrameCount);
-        int index=_objects.FindIndex(o=>o.Id==item.Id);if(index<0)throw new InvalidOperationException("对象不存在。");
+        int index=_objects.FindIndex(o=>o.Id==item.Id);if(index<0)throw new InvalidOperationException(L.T("The object does not exist."));
         _objects[index]=item;SelectedId=item.Id;
     });
     public void DeleteSelectedObject()
     {
         if(SelectedObject is not { } item)return;
-        EditState("删除对象",()=>{_objects.RemoveAll(o=>o.Id==item.Id);SelectedId=null;});
+        EditState("Delete object",()=>{_objects.RemoveAll(o=>o.Id==item.Id);SelectedId=null;});
     }
     public void DuplicateSelectedObject() { if(SelectedObject is { } item)AddObject(item with { Id=Guid.NewGuid(),X=Math.Min(16384,item.X+8),Y=Math.Min(16384,item.Y+8) }); }
     public void FlattenSelectedObject()
     {
         if(SelectedObject is not { } item)return;
-        EditState("对象合并到像素",()=>
+        EditState("Rasterize object",()=>
         {
             var stack=_objects.TakeWhile(o=>o.Id!=item.Id).Append(item).Where(o=>o.Frame==Frame && o.Layer==item.Layer).ToArray();
             byte[] pixels=Note.FrameData.DecodeFrame(Frame);foreach(var o in stack)o.Draw(pixels);
@@ -147,14 +147,14 @@ public sealed class EditorDocument : IDisposable
     }
     public void SaveProject(string path)
     {
-        if(!path.EndsWith(".kwzproj",StringComparison.OrdinalIgnoreCase))throw new ArgumentException("工程请保存为 .kwzproj 文件。");
+        if(!path.EndsWith(".kwzproj",StringComparison.OrdinalIgnoreCase))throw new ArgumentException(L.T("Save the project as a .kwzproj file."));
         var state=_history[_position];
         ObjectProject.Save(path,ObjectProject.Encode(state.Bytes,state.Objects,Frame));
         Path=System.IO.Path.GetFullPath(path);_savedHash=state.Hash;Revision++;Refresh();
     }
     public void ExportKwz(string path)
     {
-        if(!path.EndsWith(".kwz",StringComparison.OrdinalIgnoreCase))throw new ArgumentException("请导出为 .kwz 文件，工程仍保留为 .kwzproj。");
+        if(!path.EndsWith(".kwz",StringComparison.OrdinalIgnoreCase))throw new ArgumentException(L.T("Export as a .kwz file. Keep the editable project as .kwzproj."));
         using var output=CreateFlattenedNote();
         if(_objects.Count>0 || !output.VerifySignature())output.UpdateThumbnail(Math.Min(output.Header.ThumbnailFrameIndex,output.Header.FrameCount-1));
         output.SaveSigned(path);

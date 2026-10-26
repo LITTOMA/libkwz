@@ -17,7 +17,7 @@ public sealed class AudioPreview : IDisposable
         byte[] wave=Wave(pcm.AsSpan(offset));
         _buffer=GCHandle.Alloc(wave,GCHandleType.Pinned);
         if(!PlaySound(_buffer.AddrOfPinnedObject(),IntPtr.Zero,0x0001|0x0004|0x0002))
-        {Stop();throw new InvalidOperationException("无法打开系统声音输出设备。");}
+        {Stop();throw new InvalidOperationException(L.T("Could not open the system audio output device."));}
     }
     public void Stop()
     {
@@ -28,7 +28,7 @@ public sealed class AudioPreview : IDisposable
     {
         double fps=new double[]{.2,.5,1,2,4,6,8,12,20,24,30}[note.Header.FrameSpeed];
         double duration=note.Header.FrameCount/fps;
-        if(duration>600)throw new InvalidOperationException("同步声音预览目前支持 10 分钟以内的动画。");
+        if(duration>600)throw new InvalidOperationException(L.T("Synchronized audio preview supports animations up to 10 minutes."));
         var mix=new int[(int)Math.Ceiling(duration*KwzSound.SampleRate)];
         if(note.Sound!=null)
         {
@@ -71,14 +71,14 @@ public sealed class AudioPreview : IDisposable
     }
     public static byte[] ReadWav(string path)
     {
-        if(new FileInfo(path).Length>64*1024*1024)throw new InvalidDataException("WAV 文件不能超过 64 MB。");
+        if(new FileInfo(path).Length>64*1024*1024)throw new InvalidDataException(L.T("WAV files must not exceed 64 MB."));
         byte[] bytes=File.ReadAllBytes(path);
-        if(bytes.Length<12||!bytes.AsSpan(0,4).SequenceEqual("RIFF"u8)||!bytes.AsSpan(8,4).SequenceEqual("WAVE"u8))throw new InvalidDataException("请选择 RIFF/WAVE 音频。");
+        if(bytes.Length<12||!bytes.AsSpan(0,4).SequenceEqual("RIFF"u8)||!bytes.AsSpan(8,4).SequenceEqual("WAVE"u8))throw new InvalidDataException(L.T("Choose a RIFF/WAVE audio file."));
         int format=0,channels=0,rate=0,bits=0,alignment=0;ReadOnlySpan<byte> data=default;
         for(int p=12;p+8<=bytes.Length;)
         {
             uint length=BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(p+4));
-            if(length>int.MaxValue||length>bytes.Length-p-8)throw new InvalidDataException("WAV 区段被截断。");
+            if(length>int.MaxValue||length>bytes.Length-p-8)throw new InvalidDataException(L.T("The WAV section is truncated."));
             var chunk=bytes.AsSpan(p+8,(int)length);
             if(bytes.AsSpan(p,4).SequenceEqual("fmt "u8)&&length>=16)
             {format=BinaryPrimitives.ReadUInt16LittleEndian(chunk);channels=BinaryPrimitives.ReadUInt16LittleEndian(chunk[2..]);rate=BinaryPrimitives.ReadInt32LittleEndian(chunk[4..]);alignment=BinaryPrimitives.ReadUInt16LittleEndian(chunk[12..]);bits=BinaryPrimitives.ReadUInt16LittleEndian(chunk[14..]);}
@@ -86,15 +86,15 @@ public sealed class AudioPreview : IDisposable
             p=checked(p+8+(int)length+((int)length&1));
         }
         if(channels is <1 or >8||rate is <8000 or >192000||!((format==1&&bits==16)||(format==3&&bits==32))||alignment!=channels*bits/8||data.Length%alignment!=0)
-            throw new InvalidDataException("支持 8–192 kHz、1–8 声道的 PCM16 或 Float32 WAV。");
+            throw new InvalidDataException(L.T("Supported WAV: PCM16 or Float32, 8–192 kHz, 1–8 channels."));
         int count=data.Length/alignment;
-        if(count/(double)rate>600)throw new InvalidDataException("音轨不能超过 10 分钟。");
+        if(count/(double)rate>600)throw new InvalidDataException(L.T("Audio tracks must not exceed 10 minutes."));
         float[] mono=new float[count];
         for(int i=0;i<count;i++)for(int channel=0;channel<channels;channel++)
         {
             int at=i*alignment+channel*(bits/8);
             float value=bits==16?BinaryPrimitives.ReadInt16LittleEndian(data[at..])/32768f:BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(data[at..]));
-            if(!float.IsFinite(value))throw new InvalidDataException("WAV 包含无效采样。");mono[i]+=Math.Clamp(value,-1,1)/channels;
+            if(!float.IsFinite(value))throw new InvalidDataException(L.T("The WAV contains invalid samples."));mono[i]+=Math.Clamp(value,-1,1)/channels;
         }
         int output=(int)Math.Round(count*(double)KwzSound.SampleRate/rate);byte[] result=new byte[output*2];
         for(int i=0;i<output;i++)

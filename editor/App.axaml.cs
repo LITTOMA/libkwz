@@ -6,7 +6,11 @@ namespace KwzStudio;
 
 public sealed class App : Application
 {
-    public override void Initialize() => AvaloniaXamlLoader.Load(this);
+    public override void Initialize()
+    {
+        L.Initialize();
+        AvaloniaXamlLoader.Load(this);
+    }
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)

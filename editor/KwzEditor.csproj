@@ -11,6 +11,11 @@
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Localization/*.json" LogicalName="KwzStudio.Localization.%(Filename)%(Extension)" WithCulture="false" />
+    <EmbeddedResource Include="Fonts/FusionPixel/fusion-pixel-12px-proportional-zh_hans.otf" LogicalName="KwzStudio.Fonts.FusionPixel12.otf" />
+    <None Update="Fonts/FusionPixel/**/*.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../src/libkwz.csproj" />
     <PackageReference Include="Avalonia.Win32" Version="11.3.22" />
     <PackageReference Include="Avalonia.Skia" Version="11.3.22" />

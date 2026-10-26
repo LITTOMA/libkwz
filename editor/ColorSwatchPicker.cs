@@ -13,10 +13,12 @@ namespace KwzStudio;
 /// <summary>Palette choices rendered inside the existing Classic theme's toggle buttons.</summary>
 public sealed class ColorSwatchPicker : UserControl
 {
-    private static readonly string[] ColorNames=["白","黑","红","黄","绿","蓝","透明"];
+    private static readonly string[] ColorNames=["White","Black","Red","Yellow","Green","Blue","Transparent"];
     private readonly ToggleButton[] _buttons;
     private readonly ColorChip[] _chips;
     private readonly string[]? _labels;
+    private int[] _colors=[];
+    private readonly TextBlock[] _labelBlocks;
     private int _selectedIndex=-1;
     public event EventHandler? SelectionChanged;
     public int SelectedIndex
@@ -32,19 +34,20 @@ public sealed class ColorSwatchPicker : UserControl
     public ColorSwatchPicker(int[] colors,string[]? labels=null)
     {
         if(colors.Length==0 || (labels!=null && labels.Length!=colors.Length))throw new ArgumentException("Invalid color choices.");
-        _labels=labels;_buttons=new ToggleButton[colors.Length];_chips=new ColorChip[colors.Length];
-        var row=new StackPanel { Orientation=Orientation.Horizontal,Spacing=2 };
+        _labels=labels;_buttons=new ToggleButton[colors.Length];_chips=new ColorChip[colors.Length];_labelBlocks=new TextBlock[colors.Length];
+        var row=new WrapPanel { FlowDirection=FlowDirection.LeftToRight };
         for(int i=0;i<colors.Length;i++)
         {
             int index=i;
             var chip=new ColorChip { Width=16,Height=18 };
-            var button=new ToggleButton { Name="Swatch"+i,Padding=new Thickness(3),MinWidth=0,MinHeight=0,Height=28 };
+            var button=new ToggleButton { Name="Swatch"+i,Padding=new Thickness(3),MinWidth=0,MinHeight=0,Height=28,Margin=new Thickness(0,0,2,2) };
             if(labels==null) { button.Width=24;button.Content=chip; }
             else
             {
-                button.Width=74;
+                button.MinWidth=74;
                 var content=new StackPanel { Orientation=Orientation.Horizontal,Spacing=3,VerticalAlignment=VerticalAlignment.Center };
-                content.Children.Add(chip);content.Children.Add(new TextBlock { Text=labels[i],VerticalAlignment=VerticalAlignment.Center });button.Content=content;
+                var label=new TextBlock { Text=L.T(labels[i]),VerticalAlignment=VerticalAlignment.Center };
+                _labelBlocks[i]=label;content.Children.Add(chip);content.Children.Add(label);button.Content=content;
             }
             button.Click+=(_,_)=>{SelectedIndex=index;RefreshSelection();};
             button.KeyDown+=(_,e)=>
@@ -60,16 +63,19 @@ public sealed class ColorSwatchPicker : UserControl
     public void SetColors(params int[] colors)
     {
         if(colors.Length!=_chips.Length)throw new ArgumentException("Color choice count changed.");
+        _colors=(int[])colors.Clone();
         for(int i=0;i<colors.Length;i++)
         {
             int index=colors[i];if((uint)index>=KwzMeta.FramePalette.Length)throw new ArgumentOutOfRangeException(nameof(colors));
             Rgba32 rgba=KwzMeta.FramePalette[index].ToPixel<Rgba32>();
             _chips[i].Color=Color.FromArgb(rgba.A,rgba.R,rgba.G,rgba.B);_chips[i].InvalidateVisual();
-            string description=ColorNames[index]+(rgba.A==0?"":$"  #{rgba.R:X2}{rgba.G:X2}{rgba.B:X2}");
-            string tip=_labels==null?description:$"{_labels[i]} · {description}";
+            if(_labels!=null)_labelBlocks[i].Text=L.T(_labels[i]);
+            string description=L.T(ColorNames[index])+(rgba.A==0?"":$"  #{rgba.R:X2}{rgba.G:X2}{rgba.B:X2}");
+            string tip=_labels==null?description:$"{L.T(_labels[i])} · {description}";
             AutomationProperties.SetName(_buttons[i],tip);ToolTip.SetTip(_buttons[i],tip);
         }
     }
+    public void RefreshLanguage()=>SetColors(_colors);
     private void RefreshSelection()
     {
         for(int i=0;i<_buttons.Length;i++)

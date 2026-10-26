@@ -11,7 +11,7 @@ using System.Text.Json;
 
 string root=Path.GetFullPath(args.Length>0?args[0]:"../../../..");
 string sample=Path.GetFullPath(Path.Combine(root,"test/LibKwz.Test/sound.kwz"));
-string scratch=Path.Combine(root,".validation/editor-smoke");
+string scratch=Path.GetFullPath(Environment.GetEnvironmentVariable("KWZ_STUDIO_TEST_DIR")??Path.Combine(root,".validation/editor-smoke"));
 Directory.CreateDirectory(scratch);
 var checks=new List<string>();
 void Check(bool passed,string name)
@@ -22,6 +22,8 @@ void Check(bool passed,string name)
 string Hash(byte[] bytes)=>Convert.ToHexString(SHA256.HashData(bytes));
 string originalHash=Hash(File.ReadAllBytes(sample));
 AppBuilder.Configure<App>().UseSkia().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing=false }).SetupWithoutStarting();
+L.Initialize(Path.Combine(scratch,"settings.json"),"en-US");
+L.SetLanguage("en",persist:false);
 var window=new MainWindow(sample);
 void Pump()
 {
@@ -87,9 +89,9 @@ try
     string indexedPixels=Hash(doc.Pixels);
     Pick("FirstInkPalette",5);
     var colored=PreviewCanvas.Composite(doc,doc.Pixels);int coloredOffset=(10*320+10)*4;
-    Check(doc.Note.Meta.Entries[0].LayerAFirstColorIndex==5 && colored[coloredOffset]==255 && colored[coloredOffset+1]==174 && colored[coloredOffset+2]==6,"Clicking a palette swatch changes the actual rendered ink color");
+    Check(doc.Note.Meta.Entries[0].LayerAFirstColorIndex==5 && colored[coloredOffset]==206 && colored[coloredOffset+1]==56 && colored[coloredOffset+2]==0,"Clicking a palette swatch changes the actual rendered ink color");
     Check(Hash(doc.Pixels)==indexedPixels && (doc.Note.Meta.Entries[0].Flags&~0xf00u)==(originalFlags&~0xf00u) && doc.Note.Meta.Entries[1].Flags==followingFlags,"Changing a color preserves indexed pixels, other inks, layers and frames");
-    Check(Avalonia.Automation.AutomationProperties.GetName(Swatch("DrawingInk",0))?.Contains("#06AEFF")==true,"Drawing ink buttons show the current frame's actual palette colors");
+    Check(Avalonia.Automation.AutomationProperties.GetName(Swatch("DrawingInk",0))?.Contains("#0038CE")==true,"Drawing ink buttons show the current frame's actual palette colors");
     int beforeRepeat=doc.Revision;Pick("FirstInkPalette",5);
     Check(Swatch("FirstInkPalette",5).IsChecked==true && doc.Revision==beforeRepeat,"Clicking the selected swatch keeps it selected without adding an undo step");
     window.Canvas.Focus();PressKey(Key.Z,RawInputModifiers.Control);
@@ -126,6 +128,17 @@ try
     window.Canvas.Focus();PressKey(Key.T);Click(middle);
     Check(doc.Pixels.Count(p=>p!=0)>100,"Chinese text tool renders glyphs into layer pixels");
     Check(doc.Objects.Count==1 && doc.BasePixels.All(p=>p==0),"Text is an editable object, not burned into the base layer");
+    Check(doc.Objects[0].FontFamily==StudioFonts.DefaultFamily,"New text objects default to bundled Fusion Pixel");
+    using(var face=StudioFonts.CreateTypeface(StudioFonts.DefaultFamily))
+        Check(face.FamilyName==StudioFonts.DefaultFamily && face.GetGlyphs("动画记事本 ABC").All(g=>g!=0),"Bundled Fusion Pixel resolves directly and contains Chinese and Latin glyphs");
+    using(var legacy=new EditorDocument())
+    {
+        legacy.New();
+        legacy.AddObject(new CanvasObject { Text="旧工程 ABC",FontFamily="Microsoft YaHei" }.MeasureText());
+        string legacyPixels=Hash(legacy.Pixels),legacyPath=Path.Combine(scratch,"legacy-font.kwzproj");
+        legacy.SaveProject(legacyPath);legacy.Open(legacyPath);
+        Check(legacy.Objects.Single().FontFamily=="Microsoft YaHei" && Hash(legacy.Pixels)==legacyPixels,"Reopening an existing project preserves its saved font and pixels");
+    }
     var text=doc.Objects[0];
     Drag(text.X+8,text.Y+8,text.X-112,text.Y-77);
     var moved=doc.Objects.Single();
@@ -262,6 +275,7 @@ try
     window.Width=1080;window.Height=760;Pump();
     using(var screenshot=window.CaptureRenderedFrame()) screenshot!.Save(Path.Combine(scratch,"compact.png"));
     Check(window.Canvas.Bounds.Width>=320 && window.Canvas.Bounds.Height>=180,"Minimum window size keeps preview usable");
+    LocalizationChecks.Run(window,root,scratch,Check,Pump);
     Check(Hash(File.ReadAllBytes(sample))==originalHash,"Original sample remains untouched");
     File.WriteAllText(Path.Combine(root,"editor/smoke-report.json"),JsonSerializer.Serialize(new { passed=checks.Count,checks,originalSha256=originalHash,theme="Classic.Avalonia.Theme 11.3.0.3",renderer="Avalonia.Headless + Skia" },new JsonSerializerOptions { WriteIndented=true }));
 }

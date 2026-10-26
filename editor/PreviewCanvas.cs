@@ -21,7 +21,7 @@ public sealed class PreviewCanvas : Control,IDisposable
     public bool Onion { get; set; }
     public bool GridLines { get; set; }
     public double Zoom { get; set; }=0;
-    public string StampText { get; set; }="中文汉化";
+    public string StampText { get; set; }=L.T("Text");
     public int TextSize { get; set; }=24;
     public bool ShapeFilled { get; set; }=true;
     public int ShapeStrokeWidth { get; set; }=1;
@@ -172,7 +172,7 @@ public sealed class PreviewCanvas : Control,IDisposable
     }
     protected override void OnPointerMoved(PointerEventArgs e)
     {
-        var p=Pixel(e.GetPosition(this)); Status?.Invoke($"X {p.X:000}  Y {p.Y:000}  ·  图层 {(char)('A'+Layer)}");
+        var p=Pixel(e.GetPosition(this)); Status?.Invoke(L.F("X {0} Y {1} · Layer {2}",p.X.ToString("000"),p.Y.ToString("000"),(char)('A'+Layer)));
         if(_stroke==null && _objectPreview==null)
         {
             Cursor=new Cursor(ObjectTool && Document.SelectedObject is { } selected && ResizeHandle(selected).Inflate(3).Contains(e.GetPosition(this))?StandardCursorType.BottomRightCorner:
@@ -191,8 +191,8 @@ public sealed class PreviewCanvas : Control,IDisposable
         CancelInteraction();
         try
         {
-            if(item!=null) { if(create)Document.AddObject(item);else Document.UpdateObject(item,resize?"缩放对象":"移动对象"); }
-            else if(pixels!=null)Document.Edit(Tool==DrawingTool.Eraser?"擦除像素":Tool==DrawingTool.Fill?"填充区域":"画笔描绘",n=>n.FrameData.SetFramePixels(frame,pixels));
+            if(item!=null) { if(create)Document.AddObject(item);else Document.UpdateObject(item,resize?"Resize object":"Move object"); }
+            else if(pixels!=null)Document.Edit(Tool==DrawingTool.Eraser?"Erase pixels":Tool==DrawingTool.Fill?"Fill area":"Draw pixels",n=>n.FrameData.SetFramePixels(frame,pixels));
         }
         catch(Exception error) { Status?.Invoke(error.Message); }
         InvalidateVisual();e.Handled=true;
@@ -212,7 +212,7 @@ public sealed class PreviewCanvas : Control,IDisposable
             if(e.Key==Key.Delete)Document.DeleteSelectedObject();
             else if(e.Key==Key.D && e.KeyModifiers.HasFlag(KeyModifiers.Control))Document.DuplicateSelectedObject();
             else if(e.Key is Key.Left or Key.Right or Key.Up or Key.Down)
-                Document.UpdateObject(item with { X=Math.Clamp(item.X+(e.Key==Key.Left?-step:e.Key==Key.Right?step:0),-16384,16384),Y=Math.Clamp(item.Y+(e.Key==Key.Up?-step:e.Key==Key.Down?step:0),-16384,16384) },"微调对象位置");
+                Document.UpdateObject(item with { X=Math.Clamp(item.X+(e.Key==Key.Left?-step:e.Key==Key.Right?step:0),-16384,16384),Y=Math.Clamp(item.Y+(e.Key==Key.Up?-step:e.Key==Key.Down?step:0),-16384,16384) },"Nudge object");
             else { base.OnKeyDown(e);return; }
             e.Handled=true;return;
         }
